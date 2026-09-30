@@ -1,0 +1,163 @@
+[
+  {
+    "title": "Junior Python Developer",
+    "company": "Acme",
+    "city": "Warszawa",
+    "salary_min": 8000,
+    "salary_max": 12000,
+    "skills": ["python", "sql", "docker"],
+    "remote": true
+  },
+  {
+    "title": "Backend Engineer",
+    "company": "Neptune Systems",
+    "city": "Kraków",
+    "salary_min": 12000,
+    "salary_max": 17000,
+    "skills": ["Python", "fastapi", "postgresql", "docker", "SQL"],
+    "remote": false
+  },
+  {
+    "title": "AI Engineer",
+    "company": "Lumen AI",
+    "city": "Warszawa",
+    "salary_min": 15000,
+    "salary_max": 22000,
+    "skills": ["python", "langchain", "openai", "docker"],
+    "remote": true
+  },
+  {
+    "title": "Data Analyst",
+    "company": "Vistula Analytics",
+    "city": "Wrocław",
+    "salary_min": null,
+    "salary_max": null,
+    "skills": ["sql", "python", "excel"],
+    "remote": false
+  },
+  {
+    "title": "Fullstack Developer",
+    "company": "Codewave",
+    "city": "Warszawa",
+    "salary_min": 10000,
+    "salary_max": 16000,
+    "skills": ["typescript", "react", "python"],
+    "remote": true
+  },
+  {
+    "title": "Machine Learning Engineer",
+    "company": "DeepGdansk",
+    "city": "Gdańsk",
+    "salary_min": 14000,
+    "salary_max": 20000,
+    "skills": ["python", "pytorch", "docker", "sql"]
+  },
+  {
+    "title": "Junior Backend Developer",
+    "company": "Skyline Software",
+    "city": "Poznań",
+    "salary_min": 7000,
+    "salary_max": 10000,
+    "skills": [],
+    "remote": true
+  },
+  {
+    "title": "Python Developer",
+    "company": "Acme",
+    "city": "Warszawa",
+    "salary_min": 11000,
+    "salary_max": 15000,
+    "skills": ["python", "django", "sql"],
+    "remote": false
+  },
+  {
+    "title": "Data Engineer",
+    "company": "Vistula Analytics",
+    "city": "Wrocław",
+    "salary_min": 13000,
+    "salary_max": 19000,
+    "skills": ["python", "sql", "airflow", "docker"],
+    "remote": true
+  },
+  {
+    "title": "LLM Engineer",
+    "company": "Lumen AI",
+    "city": "Kraków",
+    "salary_min": 18000,
+    "salary_max": 26000,
+    "skills": ["python", "langchain", "openai", "rag"],
+    "remote": true
+  },
+  {
+    "title": "Software Engineer",
+    "company": "Neptune Systems",
+    "city": "Kraków",
+    "salary_min": 9000,
+    "salary_max": 13000,
+    "skills": ["python", "sql"],
+    "remote": false
+  },
+  {
+    "title": "Junior AI Engineer",
+    "company": "Skyline Software",
+    "city": "Poznań",
+    "salary_min": null,
+    "salary_max": 11000,
+    "skills": ["python", "openai"],
+    "remote": true
+  },
+  {
+    "title": "DevOps Engineer",
+    "company": "Codewave",
+    "city": "Warszawa",
+    "salary_min": 12000,
+    "salary_max": 18000,
+    "skills": ["docker", "kubernetes", "python"],
+    "remote": false
+  },
+  {
+    "title": "Python Backend Intern",
+    "company": "DeepGdansk",
+    "city": "Gdańsk",
+    "salary_min": 4000,
+    "salary_max": 6000,
+    "skills": ["python", "sql"],
+    "remote": true
+  },
+  {
+    "title": "Research Engineer",
+    "company": "Lumen AI",
+    "city": "Warszawa",
+    "salary_min": 20000,
+    "salary_max": 30000,
+    "skills": ["python", "pytorch", "rag", "docker"],
+    "remote": true
+  },
+  {
+    "title": "Data Scientist",
+    "company": "Vistula Analytics",
+    "city": "Wrocław",
+    "salary_min": 11000,
+    "salary_max": 16000,
+    "skills": ["python", "sql"],
+    "remote": false
+  },
+  {
+    "title": "Platform Engineer",
+    "company": "Neptune Systems",
+    "city": "Kraków",
+    "salary_min": 13000,
+    "salary_max": 19000,
+    "skills": ["python", "docker", "kubernetes", "sql"],
+    "remote": true
+  },
+  {
+    "title": "Junior Fullstack Developer",
+    "company": "Codewave",
+    "city": "Poznań",
+    "salary_min": 6500,
+    "salary_max": 9500,
+    "skills": ["python", "react"],
+    "remote": false
+  }
+]
