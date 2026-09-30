@@ -28,3 +28,9 @@ class Offer(BaseModel):
         return (
             f"{self.title} @ {self.company} ({self.city}) {self.salary_min}-{self.salary_max} PLN"
         )
+
+
+class OfferSummary(BaseModel):
+    text: str
+    input_tokens: int
+    output_tokens: int
