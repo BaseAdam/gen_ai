@@ -7,6 +7,7 @@ from google.genai.types import GenerateContentConfig, GenerateContentResponse
 
 from offers.config import Settings
 from offers.models import Offer, OfferSummary
+from offers.retry import with_retry
 
 SYSTEM_INSTRUCTION = (
     "role: it recruiter, task: summarize offer, format: 2 sentences, language: polish, "
@@ -93,6 +94,6 @@ async def summarize_all(
 
     async def limited(offer: Offer) -> OfferSummary:
         async with semaphore:
-            return await summarize_offer_async(aclient, offer, model)
+            return await with_retry(lambda: summarize_offer_async(aclient, offer, model))
 
     return await asyncio.gather(*[limited(offer) for offer in offers])
