@@ -1,10 +1,17 @@
 import asyncio
+import json
 from typing import Any
 
 import pytest
 from google.genai import types
+from pydantic import ValidationError
 
-from offers.llm import SYSTEM_INSTRUCTION, summarize_all, summarize_offer
+from offers.llm import (
+    SYSTEM_INSTRUCTION,
+    convert_offer_text_to_structure,
+    summarize_all,
+    summarize_offer,
+)
 from offers.models import Offer, OfferSummary
 
 
@@ -117,3 +124,64 @@ def test_sends_offer_json_and_instruction(offer: Offer) -> None:
     assert call["model"] == "test-model"
     assert call["contents"] == offer.model_dump_json()
     assert call["config"].system_instruction == SYSTEM_INSTRUCTION
+
+
+def test_extraction_returns_validated_offer() -> None:
+    model_output = json.dumps(
+        {
+            "title": "Mid Python Developer",
+            "company": "BrightLeaf",
+            "city": "Wrocław",
+            "salary_min": 16000,
+            "salary_max": 21000,
+            "remote": False,
+            "skills": ["Python", "FastAPI"],
+            "skills_nice_to_have": ["LangChain"],
+        }
+    )
+    client = FakeClient(make_response(model_output))
+
+    offer = convert_offer_text_to_structure(client, "surowe ogłoszenie", "test-model")
+
+    assert offer.salary_min == 16000
+    assert offer.skills == ["python", "fastapi"]
+    assert offer.skills_nice_to_have == ["langchain"]
+
+
+def test_salary_range_inverted() -> None:
+    model_output = json.dumps(
+        {
+            "title": "Mid Python Developer",
+            "company": "BrightLeaf",
+            "city": "Wrocław",
+            "salary_min": 36000,
+            "salary_max": 21000,
+            "remote": False,
+            "skills": ["Python", "FastAPI"],
+            "skills_nice_to_have": ["LangChain"],
+        }
+    )
+
+    client = FakeClient(make_response(model_output))
+    with pytest.raises(ValidationError):
+        convert_offer_text_to_structure(client, "surowe ogłoszenie", "test-model")
+
+
+def test_empty_response_on_extraction() -> None:
+    client = FakeClient(types.GenerateContentResponse())
+
+    with pytest.raises(ValueError, match="Empty response"):
+        convert_offer_text_to_structure(client, "", "test-model")
+
+
+def test_extraction_sends_raw_text_and_schema() -> None:
+    client = FakeClient(make_response('{"title": "Dev", "company": "X", "city": "Y"}'))
+
+    convert_offer_text_to_structure(client, "Odpowiedź", "test-model")
+
+    assert len(client.models.calls) == 1
+    call = client.models.calls[0]
+    assert call["model"] == "test-model"
+    assert call["contents"] == "Odpowiedź"
+    assert call["config"].response_schema is Offer
+    assert call["config"].response_mime_type == "application/json"

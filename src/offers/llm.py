@@ -13,6 +13,12 @@ SYSTEM_INSTRUCTION = (
     "content: (company, salary range, important skills)"
 )
 
+EXTRACTION_INSTRUCTION = (
+    "use data which is inside the input text, if there are no information provided "
+    "about some property then fill with Null, salary ranges should be as integers monthly in PLN, "
+    "remote offer should be true ONLY if offer text are saying it"
+)
+
 
 def create_client(settings: Settings) -> genai.Client:
     client = genai.Client(api_key=settings.gemini_api_key.get_secret_value())
@@ -42,6 +48,27 @@ def _generate_content_config() -> GenerateContentConfig:
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )
     return config
+
+
+def _generate_structured_content_config() -> GenerateContentConfig:
+    config = types.GenerateContentConfig(
+        system_instruction=EXTRACTION_INSTRUCTION,
+        temperature=0,
+        response_mime_type="application/json",
+        response_schema=Offer,
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+    )
+    return config
+
+
+def convert_offer_text_to_structure(client: genai.Client, raw_text: str, model: str) -> Offer:
+    response = client.models.generate_content(
+        model=model, contents=raw_text, config=_generate_structured_content_config()
+    )
+    text = response.text
+    if text is None:
+        raise ValueError("Empty response")
+    return Offer.model_validate_json(text)
 
 
 def summarize_offer(client: genai.Client, offer: Offer, model: str) -> OfferSummary:
