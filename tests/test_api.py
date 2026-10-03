@@ -2,9 +2,10 @@ from collections.abc import Iterator
 from types import SimpleNamespace
 from typing import Any
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
-from google.genai import types
+from google.genai import errors, types
 from pydantic import SecretStr
 
 from offers.api import app, get_client, get_offers, get_settings
@@ -33,9 +34,12 @@ class FakeModels:
         self.responses: list[types.GenerateContentResponse] = []
         self.chunks: list[str] = []
         self.calls: list[dict[str, Any]] = []
+        self.error: Exception | None = None
 
     def generate_content(self, **kwargs: Any) -> types.GenerateContentResponse:
         self.calls.append(kwargs)
+        if self.error:
+            raise self.error
         return self.responses.pop(0)
 
     def generate_content_stream(self, **kwargs: Any) -> Iterator[SimpleNamespace]:
@@ -132,3 +136,22 @@ def test_tips_unknown_offer_returns_404(
     assert response.status_code == 404
     assert response.json() == {"detail": "Nie ma takiej oferty"}
     assert fake_client.models.calls == []
+
+
+def test_model_timeout_returns_504(api: TestClient, fake_client: FakeClient) -> None:
+    fake_client.models.error = httpx.ReadTimeout("too slow")
+
+    response = api.post("/ask", json={"question": "Ile płacą w Warszawie?"})
+
+    assert response.status_code == 504
+    assert response.json() == {"detail": "Model nie odpowiedział na czas"}
+
+
+def test_model_error_returns_502_without_details(api: TestClient, fake_client: FakeClient) -> None:
+    body = {"error": {"code": 503, "message": "internal detail", "status": "UNAVAILABLE"}}
+    fake_client.models.error = errors.APIError(503, body)
+
+    response = api.post("/offers/extract", json={"text": "Szukamy Python deva do Acme w Gdańsku"})
+
+    assert response.status_code == 502
+    assert "internal detail" not in response.text

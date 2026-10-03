@@ -23,8 +23,10 @@ EXTRACTION_INSTRUCTION = (
 
 
 def create_client(settings: Settings) -> genai.Client:
-    client = genai.Client(api_key=settings.gemini_api_key.get_secret_value())
-    return client
+    http_options = types.HttpOptions(timeout=int(settings.gemini_timeout_seconds * 1000))
+    return genai.Client(
+        api_key=settings.gemini_api_key.get_secret_value(), http_options=http_options
+    )
 
 
 def _convert_response_to_summary(response: GenerateContentResponse) -> OfferSummary:

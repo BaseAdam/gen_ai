@@ -1,9 +1,11 @@
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+import httpx
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 from google import genai
+from google.genai import errors
 from pydantic import BaseModel, Field
 
 from offers.analysis import filter_offers
@@ -14,6 +16,16 @@ from offers.llm import convert_offer_text_to_structure, create_client, stream_in
 from offers.models import Offer
 
 app = FastAPI(title="Offers API")
+
+
+@app.exception_handler(httpx.TimeoutException)
+def handle_timeout(request: Request, exc: httpx.TimeoutException) -> JSONResponse:
+    return JSONResponse(status_code=504, content={"detail": "Model nie odpowiedział na czas"})
+
+
+@app.exception_handler(errors.APIError)
+def handle_api_error(request: Request, exc: errors.APIError) -> JSONResponse:
+    return JSONResponse(status_code=502, content={"detail": "Błąd usługi modelu"})
 
 
 @lru_cache

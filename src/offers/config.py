@@ -1,4 +1,4 @@
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -7,3 +7,4 @@ class Settings(BaseSettings):
 
     gemini_api_key: SecretStr
     gemini_model: str
+    gemini_timeout_seconds: float = Field(default=30, gt=0)
