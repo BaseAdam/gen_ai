@@ -1,5 +1,6 @@
 import asyncio
 import json
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
@@ -9,6 +10,7 @@ from pydantic import ValidationError
 from offers.llm import (
     SYSTEM_INSTRUCTION,
     convert_offer_text_to_structure,
+    stream_interview_tips,
     summarize_all,
     summarize_offer,
 )
@@ -185,3 +187,25 @@ def test_extraction_sends_raw_text_and_schema() -> None:
     assert call["contents"] == "Odpowiedź"
     assert call["config"].response_schema is Offer
     assert call["config"].response_mime_type == "application/json"
+
+
+class FakeStreamModels:
+    def __init__(self, chunks: list[types.GenerateContentResponse]) -> None:
+        self.chunks = chunks
+
+    def generate_content_stream(self, **kwargs: Any) -> Iterator[types.GenerateContentResponse]:
+        return iter(self.chunks)
+
+
+class FakeStreamClient:
+    def __init__(self, chunks: list[types.GenerateContentResponse]) -> None:
+        self.models = FakeStreamModels(chunks)
+
+
+def test_stream_yields_text_pieces_and_skips_empty(offer: Offer) -> None:
+    chunks = [make_response("1. Powtórz "), types.GenerateContentResponse(), make_response("SQL.")]
+    client = FakeStreamClient(chunks)
+
+    pieces = list(stream_interview_tips(client, offer, "test-model"))
+
+    assert pieces == ["1. Powtórz ", "SQL."]

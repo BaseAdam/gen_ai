@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Iterator
 
 from google import genai
 from google.genai import types
@@ -97,3 +98,23 @@ async def summarize_all(
             return await with_retry(lambda: summarize_offer_async(aclient, offer, model))
 
     return await asyncio.gather(*[limited(offer) for offer in offers])
+
+
+TIPS_INSTRUCTION = (
+    "Na podstawie oferty pracy wypisz 5 krótkich wskazówek, jak przygotować się "
+    "do rozmowy rekrutacyjnej na to stanowisko. Odpowiadaj po polsku."
+)
+
+
+def stream_interview_tips(client: genai.Client, offer: Offer, model: str) -> Iterator[str]:
+    config = types.GenerateContentConfig(
+        system_instruction=TIPS_INSTRUCTION,
+        temperature=0.3,
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+    )
+    stream = client.models.generate_content_stream(
+        model=model, contents=offer.model_dump_json(), config=config
+    )
+    for chunk in stream:
+        if chunk.text:
+            yield chunk.text
