@@ -37,3 +37,8 @@ class OfferSummary(BaseModel):
     text: str
     input_tokens: int
     output_tokens: int
+
+
+class ScoredOffer(BaseModel):
+    offer: Offer
+    score: float
