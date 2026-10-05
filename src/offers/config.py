@@ -9,3 +9,4 @@ class Settings(BaseSettings):
     gemini_model: str
     gemini_timeout_seconds: float = Field(default=30, gt=0)
     gemini_embedding_model: str = "gemini-embedding-001"
+    database_url: str = "postgresql://offers:offers@localhost:5432/offers"

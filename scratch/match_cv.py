@@ -1,7 +1,7 @@
 from offers.config import Settings
-from offers.embeddings import embed_texts, offer_to_text, rank_offers
-from offers.io import load_offers
+from offers.embeddings import embed_texts
 from offers.llm import create_client
+from offers.store import connect, search_offers
 
 CV = """
 Fullstack developer z trzyletnim doświadczeniem w TypeScript i React.
@@ -13,12 +13,9 @@ Szukam pracy w Warszawie albo zdalnie.
 if __name__ == "__main__":
     settings = Settings()
     client = create_client(settings)
-    offers = load_offers("offers.json")
-    model = settings.gemini_embedding_model
 
-    texts = [offer_to_text(offer) for offer in offers]
-    offer_vectors = embed_texts(client, texts, model, "RETRIEVAL_DOCUMENT")
-    [cv_vector] = embed_texts(client, [CV], model, "RETRIEVAL_QUERY")
+    [cv_vector] = embed_texts(client, [CV], settings.gemini_embedding_model, "RETRIEVAL_QUERY")
 
-    for item in rank_offers(cv_vector, offer_vectors, offers):
-        print(f"{item.score:.3f}  {item.offer}")
+    with connect(settings.database_url) as conn:
+        for item in search_offers(conn, cv_vector):
+            print(f"{item.score:.3f}  {item.offer}")
