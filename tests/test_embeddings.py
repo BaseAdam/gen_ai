@@ -3,7 +3,13 @@ from typing import Any
 import pytest
 from google.genai import types
 
-from offers.embeddings import cosine_similarity, embed_texts, offer_to_text, rank_offers
+from offers.embeddings import (
+    cosine_similarity,
+    embed_groups,
+    embed_texts,
+    offer_to_text,
+    rank_offers,
+)
 from offers.models import Offer
 
 
@@ -103,3 +109,13 @@ def test_rank_offers_limits_to_top_k(offers: list[Offer]) -> None:
 def test_rank_offers_rejects_mismatched_lengths(offers: list[Offer]) -> None:
     with pytest.raises(ValueError):
         rank_offers([1.0, 0.0], VECTORS[:2], offers)
+
+
+def test_embed_groups_uses_one_call_and_keeps_grouping() -> None:
+    client = FakeEmbedClient([[1.0], [2.0], [3.0]])
+
+    vectors = embed_groups(client, [["a", "b"], ["c"]], "test-model", "RETRIEVAL_DOCUMENT")
+
+    assert vectors == [[[1.0], [2.0]], [[3.0]]]
+    assert len(client.models.calls) == 1
+    assert client.models.calls[0]["contents"] == ["a", "b", "c"]

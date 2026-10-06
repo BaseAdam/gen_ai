@@ -3,7 +3,7 @@ from offers.llm import create_client
 from offers.rag import answer_with_rag
 from offers.store import connect
 
-QUESTION = "Znam Reacta i TypeScript, uczę się Pythona. Które oferty pozwolą mi wejść w AI?"
+QUESTION = "W których ofertach firma zapewnia sprzęt do pracy zdalnej?"
 
 if __name__ == "__main__":
     settings = Settings()

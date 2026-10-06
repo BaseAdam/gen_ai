@@ -18,8 +18,8 @@ def offers() -> list[Offer]:
     ]
 
 
-CONTENTS = ["text a", "text b", "text c"]
-VECTORS = [vec(0.0, 1.0), vec(1.0, 0.0), vec(1.0, 1.0)]
+CONTENTS = [["text a"], ["text b"], ["text c"]]
+VECTORS = [[vec(0.0, 1.0)], [vec(1.0, 0.0)], [vec(1.0, 1.0)]]
 
 
 def test_search_returns_closest_first(conn: Connection, offers: list[Offer]) -> None:
@@ -93,3 +93,19 @@ def test_search_returns_nothing_for_unrelated_query(conn: Connection, offers: li
     ranked = search_offers(conn, vec(0.0, 0.0, 1.0), min_score=0.5)
 
     assert ranked == []
+
+
+def test_search_returns_each_offer_once_with_its_best_chunk(
+    conn: Connection, offers: list[Offer]
+) -> None:
+    contents = [["a1", "a2"], ["b1"], ["c1"]]
+    vectors = [[vec(0.0, 1.0), vec(1.0, 0.0)], [vec(1.0, 1.0)], [vec(0.0, 1.0)]]
+    replace_offers(conn, offers, contents, vectors)
+
+    ranked = search_offers(conn, vec(1.0, 0.0))
+
+    assert [(item.offer.title, item.chunk) for item in ranked] == [
+        ("A", "a2"),
+        ("B", "b1"),
+        ("C", "c1"),
+    ]

@@ -14,6 +14,7 @@ class Offer(BaseModel):
     skills_nice_to_have: list[str] = Field(
         default=[], description="Technologie z sekcji 'mile widziane' / nice to have"
     )
+    description: str = Field(default="", description="Pełna treść ogłoszenia")
 
     @model_validator(mode="after")
     def check_salary_range(self) -> Self:
@@ -42,6 +43,7 @@ class OfferSummary(BaseModel):
 class ScoredOffer(BaseModel):
     offer: Offer
     score: float
+    chunk: str = ""
 
 
 class RagAnswer(BaseModel):

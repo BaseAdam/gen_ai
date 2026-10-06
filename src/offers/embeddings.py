@@ -34,6 +34,20 @@ def embed_texts(
     return vectors
 
 
+def embed_groups(
+    client: genai.Client, groups: list[list[str]], model: str, task_type: str
+) -> list[list[list[float]]]:
+    texts = [text for group in groups for text in group]
+    vectors = embed_texts(client, texts, model, task_type)
+
+    result = []
+    position = 0
+    for group in groups:
+        result.append(vectors[position : position + len(group)])
+        position += len(group)
+    return result
+
+
 def rank_offers(
     query_vector: list[float],
     offer_vectors: list[list[float]],

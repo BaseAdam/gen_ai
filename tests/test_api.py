@@ -20,6 +20,8 @@ OFFERS = [
     Offer(title="B", company="Y", city="Kraków", remote=True, skills=["python"]),
 ]
 
+CHUNKS = [["a"], ["b"]]
+
 
 def vec(*head: float) -> list[float]:
     return list(head) + [0.0] * (EMBEDDING_DIMENSIONS - len(head))
@@ -176,7 +178,7 @@ def test_rag_returns_answer_with_sources(
     api: TestClient, fake_client: FakeClient, conn: Connection
 ) -> None:
     app.dependency_overrides[get_conn] = lambda: conn
-    replace_offers(conn, OFFERS, ["a", "b"], [vec(0.0, 1.0), vec(1.0, 0.0)])
+    replace_offers(conn, OFFERS, CHUNKS, [[vec(0.0, 1.0)], [vec(1.0, 0.0)]])
     fake_client.models.responses = [text_response("Polecam [1].")]
 
     response = api.post("/rag", json={"question": "Co wybrać?", "top_k": 1})
@@ -205,7 +207,7 @@ def test_rag_passes_filters_from_request(
     api: TestClient, fake_client: FakeClient, conn: Connection
 ) -> None:
     app.dependency_overrides[get_conn] = lambda: conn
-    replace_offers(conn, OFFERS, ["a", "b"], [vec(1.0, 1.0), vec(1.0, 0.0)])
+    replace_offers(conn, OFFERS, CHUNKS, [[vec(1.0, 1.0)], [vec(1.0, 0.0)]])
     fake_client.models.responses = [text_response("Polecam [1].")]
 
     response = api.post("/rag", json={"question": "Co wybrać?", "remote": False})
@@ -217,7 +219,7 @@ def test_rag_uses_min_score_from_settings(
     api: TestClient, fake_client: FakeClient, conn: Connection
 ) -> None:
     app.dependency_overrides[get_conn] = lambda: conn
-    replace_offers(conn, OFFERS, ["a", "b"], [vec(0.0, 1.0), vec(1.0, 0.0)])
+    replace_offers(conn, OFFERS, CHUNKS, [[vec(0.0, 1.0)], [vec(1.0, 0.0)]])
     fake_client.models.responses = [text_response("Polecam [1].")]
 
     response = api.post("/rag", json={"question": "Co wybrać?"})

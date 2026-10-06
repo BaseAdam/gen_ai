@@ -5,8 +5,14 @@
     "city": "Warszawa",
     "salary_min": 8000,
     "salary_max": 12000,
-    "skills": ["python", "sql", "docker"],
-    "remote": true
+    "remote": true,
+    "skills": [
+      "python",
+      "sql",
+      "docker"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nFirma Acme to dynamicznie rozwijające się przedsiębiorstwo z siedzibą w Warszawie, które tworzy innowacyjne rozwiązania technologiczne dla klientów na całym świecie. Skupiamy się na wdrażaniu nowoczesnych systemów i chętnie wspieramy rozwój młodych talentów w naszym zespole. Nasza kultura organizacyjna opiera się na wzajemnym szacunku, otwartej komunikacji oraz ciągłym dzieleniu się wiedzą.\n\nObowiązki\nNa stanowisku Junior Python Developer będziesz odpowiedzialny za pisanie czystego kodu oraz rozwijanie naszych wewnętrznych aplikacji backendowych. Do Twoich zadań należeć będzie także projektowanie zapytań bazodanowych oraz konteneryzacja aplikacji. Będziesz ściśle współpracować z doświadczonymi programistami, co pozwoli Ci na szybkie podnoszenie swoich kwalifikacji zawodowych.\n\nWymagania\nPoszukujemy osoby, która posiada już podstawową znajomość języka Python oraz potrafi sprawnie posługiwać się językiem SQL do pracy z bazami danych. Wymagamy również znajomości narzędzia Docker, które jest kluczowe w naszym codziennym procesie wdrażania oprogramowania. Szukamy kandydata zaangażowanego, który chce stale rozwijać swoje umiejętności techniczne i szybko się uczy.\n\nOferujemy\nOferujemy stabilne zatrudnienie z wynagrodzeniem w przedziale od 8000 do 12000 złotych. Praca na tym stanowisku jest w pełni zdalna, dzięki czemu możesz wykonywać swoje obowiązki z dowolnego miejsca. Zapewniamy również niezbędny sprzęt roboczy najwyższej jakości oraz wsparcie merytoryczne całego zespołu od pierwszego dnia wdrożenia."
   },
   {
     "title": "Backend Engineer",
@@ -14,8 +20,16 @@
     "city": "Kraków",
     "salary_min": 12000,
     "salary_max": 17000,
-    "skills": ["Python", "fastapi", "postgresql", "docker", "SQL"],
-    "remote": false
+    "remote": false,
+    "skills": [
+      "python",
+      "fastapi",
+      "postgresql",
+      "docker",
+      "sql"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nNeptune Systems to dynamicznie rozwijająca się firma technologiczna z siedzibą w Krakowie, która tworzy nowoczesne rozwiązania systemowe. Nasz zespół składa się z pasjonatów, którzy codziennie stawiają czoła ciekawym wyzwaniom inżynieryjnym. Dbamy o wysoką jakość kodu oraz przyjazną atmosferę pracy w naszym krakowskim biurze.\n\nObowiązki\nJako Backend Engineer będziesz odpowiedzialny za projektowanie, rozwój i utrzymanie stabilnych systemów backendowych. Do Twoich zadań będzie należało tworzenie wydajnego kodu oraz integracja baz danych i zewnętrznych serwisów. Będziesz ściśle współpracować z zespołem programistów, aby dostarczać niezawodne oprogramowanie najwyższej jakości.\n\nWymagania\nSzukamy osoby, która posiada praktyczną znajomość języka Python oraz frameworka FastAPI. Niezbędne w codziennej pracy będzie również doświadczenie w pracy z bazą danych PostgreSQL i znajomość języka SQL. Dodatkowo wymagamy umiejętności posługiwania się narzędziem Docker do konteneryzacji aplikacji.\n\nOferujemy\nOferujemy stabilne zatrudnienie w naszym biurze w Krakowie z wynagrodzeniem w przedziale od 12000 do 17000 złotych miesięcznie. Zapewniamy pracę w trybie stacjonarnym, która umożliwia stałą wymianę wiedzy i integrację z zespołem na miejscu. Otrzymasz od nas nowoczesny sprzęt roboczy oraz możliwość rozwoju zawodowego przy ambitnych projektach backendowych."
   },
   {
     "title": "AI Engineer",
@@ -23,8 +37,15 @@
     "city": "Warszawa",
     "salary_min": 15000,
     "salary_max": 22000,
-    "skills": ["python", "langchain", "openai", "docker"],
-    "remote": true
+    "remote": true,
+    "skills": [
+      "python",
+      "langchain",
+      "openai",
+      "docker"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nLumen AI to dynamicznie rozwijająca się firma technologiczna z siedzibą w Warszawie, która tworzy nowoczesne rozwiązania z zakresu sztucznej inteligencji. Nasz zespół składa się z pasjonatów, którzy codziennie przesuwają granice możliwości technologicznych w biznesie. Wierzymy, że innowacje powstają dzięki współpracy i swobodzie działania, dlatego tworzymy środowisko sprzyjające rozwojowi każdego pracownika.\n\nObowiązki\nJako AI Engineer będziesz odpowiedzialny za projektowanie i wdrażanie zaawansowanych systemów opartych na sztucznej inteligencji. Do Twoich zadań będzie należało tworzenie wydajnych algorytmów oraz integracja nowoczesnych modeli językowych z naszymi autorskimi produktami. Będziesz ściśle współpracować z zespołem programistów i architektów, aby wspólnie dostarczać najwyższej jakości rozwiązania dla naszych klientów.\n\nWymagania\nNa tym stanowisku kluczowa jest biegła znajomość języka Python oraz doświadczenie w pracy z narzędziami takimi jak LangChain i OpenAI. Oczekujemy również praktycznej umiejętności konteneryzacji aplikacji przy użyciu technologii Docker. Szukamy osoby zaangażowanej, która potrafi samodzielnie rozwiązywać skomplikowane problemy techniczne i chce rozwijać się w obszarze sztucznej inteligencji.\n\nOferujemy\nOferujemy atrakcyjne wynagrodzenie w przedziale od 15000 do 22000 złotych, dopasowane do Twojego doświadczenia i umiejętności. Zapewniamy możliwość w pełni zdalnej pracy, dzięki czemu możesz realizować swoje zadania z dowolnego miejsca w kraju. Nasze biuro w Warszawie jest zawsze otwarte dla tych, którzy preferują pracę stacjonarną lub chcą spotkać się z zespołem na żywo."
   },
   {
     "title": "Data Analyst",
@@ -32,8 +53,14 @@
     "city": "Wrocław",
     "salary_min": null,
     "salary_max": null,
-    "skills": ["sql", "python", "excel"],
-    "remote": false
+    "remote": false,
+    "skills": [
+      "sql",
+      "python",
+      "excel"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nVistula Analytics to dynamicznie rozwijająca się firma doradcza z siedzibą we Wrocławiu, która specjalizuje się w zaawansowanej analizie danych biznesowych. Pomagamy naszym klientom podejmować kluczowe decyzje strategiczne w oparciu o rzetelne i nowoczesne modele analityczne. Nasz zespół tworzą pasjonaci, którzy stale poszukują innowacyjnych rozwiązań i chętnie dzielą się wiedzą.\n\nObowiązki\nOsoba na stanowisku Data Analyst będzie odpowiedzialna za codzienne przetwarzanie i interpretację dużych zbiorów danych rynkowych. Do Twoich zadań należeć będzie tworzenie przejrzystych raportów oraz budowanie modeli wspierających procesy biznesowe naszych partnerów. Będziesz ściśle współpracować z innymi działami w celu optymalizacji procesów i identyfikacji nowych trendów rynkowych.\n\nWymagania\nSzukamy kandydatów, którzy posiadają bardzo dobrą znajomość języka SQL oraz potrafią sprawnie analizować dane przy użyciu języka Python. Niezbędna na tym stanowisku jest także biegłość w obsłudze programu Excel, która pozwala na szybką weryfikację i prezentację wyników. Oczekujemy również rozwiniętych umiejętności analitycznego myślenia oraz gotowości do pracy stacjonarnej w naszym biurze we Wrocławiu.\n\nOferujemy\nOferujemy stabilne zatrudnienie w oparciu o umowę o pracę w naszym nowoczesnym biurze zlokalizowanym w centrum Wrocławia. Zapewniamy dostęp do nowoczesnych narzędzi pracy, programów szkoleniowych oraz możliwość rozwoju w strukturach dynamicznie rosnącej firmy. Nasz zespół gwarantuje wsparcie na każdym etapie wdrożenia oraz przyjazną atmosferę sprzyjającą wymianie doświadczeń."
   },
   {
     "title": "Fullstack Developer",
@@ -41,8 +68,14 @@
     "city": "Warszawa",
     "salary_min": 10000,
     "salary_max": 16000,
-    "skills": ["typescript", "react", "python"],
-    "remote": true
+    "remote": true,
+    "skills": [
+      "typescript",
+      "react",
+      "python"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nCodewave to dynamicznie rozwijająca się firma technologiczna z siedzibą w Warszawie, która tworzy nowoczesne rozwiązania cyfrowe dla klientów z całego świata. Specjalizujemy się w budowaniu skalowalnych aplikacji internetowych, stawiając na najwyższą jakość kodu i innowacyjne podejście do projektów. Nasz zespół składa się z doświadczonych specjalistów, którzy chętnie dzielą się wiedzą i wspierają się nawzajem w codziennej pracy.\n\nObowiązki\nNa stanowisku Fullstack Developer będziesz odpowiedzialny za projektowanie oraz wdrażanie nowych funkcjonalności zarówno po stronie frontendu, jak i backendu. Do Twoich zadań należeć będzie dbanie o czystość kodu poprzez regularne przeglądy oraz optymalizacja działania istniejących systemów. Będziesz ściśle współpracować z zespołem produktowym, aby wspólnie dostarczać rozwiązania najwyższej jakości dla naszych użytkowników.\n\nWymagania\nSzukamy osoby, która posiada bardzo dobrą znajomość technologii typescript, react oraz python. Niezbędne jest doświadczenie w komercyjnym tworzeniu aplikacji internetowych oraz umiejętność analitycznego myślenia przy rozwiązywaniu problemów technicznych. Oczekujemy również dobrej organizacji pracy własnej oraz umiejętności efektywnej komunikacji w zespole.\n\nOferujemy\nOferujemy stabilne zatrudnienie z atrakcyjnym wynagrodzeniem w przedziale od 10000 do 16000 złotych. Praca odbywa się w trybie w pełni zdalnym, jednak nasze biuro w Warszawie jest zawsze otwarte dla chętnych. Zapewniamy także dostęp do nowoczesnych narzędzi pracy oraz realne możliwości rozwoju zawodowego i podnoszenia kwalifikacji."
   },
   {
     "title": "Machine Learning Engineer",
@@ -50,7 +83,15 @@
     "city": "Gdańsk",
     "salary_min": 14000,
     "salary_max": 20000,
-    "skills": ["python", "pytorch", "docker", "sql"]
+    "remote": false,
+    "skills": [
+      "python",
+      "pytorch",
+      "docker",
+      "sql"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nDeepGdansk to dynamicznie rozwijający się start-up technologiczny z siedzibą w Gdańsku, który specjalizuje się w tworzeniu nowoczesnych rozwiązań z zakresu sztucznej inteligencji. Nasz zespół składa się z pasjonatów nauki o danych, którzy codziennie stawiają czoła ciekawym wyzwaniom inżynieryjnym. Wierzymy, że dzięki naszym innowacyjnym projektom realnie wpływamy na rozwój lokalnego i globalnego rynku nowych technologii.\n\nObowiązki\nNa stanowisku Machine Learning Engineer będziesz odpowiedzialny za projektowanie, wdrażanie oraz optymalizację zaawansowanych modeli uczenia maszynowego. Do Twoich codziennych zadań będzie należało także przygotowywanie rurociągów danych oraz ścisła współpraca z zespołem programistów i analityków. Będziesz również dbać o skalowalność i wydajność tworzonych systemów w środowisku produkcyjnym.\n\nWymagania\nSzukamy osoby, która posiada bardzo dobrą znajomość języka Python oraz potrafi sprawnie posługiwać się biblioteką PyTorch do budowania modeli uczenia maszynowego. Kluczowa jest również praktyczna umiejętność pracy z technologią Docker w celu konteneryzacji aplikacji oraz biegłe posługiwanie się językiem SQL do operacji na bazach danych. Dodatkowym atutem będzie komunikatywność, umiejętność pracy w zespole oraz chęć do ciągłego poszerzania swojej wiedzy technicznej.\n\nOferujemy\nOferujemy stabilne zatrudnienie w naszym biurze w Gdańsku z atrakcyjnym wynagrodzeniem w przedziale od 14000 do 20000 złotych miesięcznie. Praca odbywa się w trybie stacjonarnym w naszej siedzibie, co pozwala na codzienną wymianę doświadczeń w zgranym zespole specjalistów. Zapewniamy nowoczesne narzędzia pracy, budżet szkoleniowy oraz możliwość realnego wpływu na rozwój innowacyjnych produktów."
   },
   {
     "title": "Junior Backend Developer",
@@ -58,8 +99,10 @@
     "city": "Poznań",
     "salary_min": 7000,
     "salary_max": 10000,
+    "remote": true,
     "skills": [],
-    "remote": true
+    "skills_nice_to_have": [],
+    "description": "O firmie\nSkyline Software to dynamicznie rozwijający się software house z siedzibą w Poznaniu, który tworzy nowoczesne rozwiązania technologiczne dla klientów z całego świata. Nasz zespół składa się z pasjonatów, którzy stawiają na innowacje oraz wysoką jakość dostarczanego kodu. Dbamy o przyjazną atmosferę pracy i stały rozwój naszych pracowników na każdym szczeblu kariery.\n\nObowiązki\nNa stanowisku Junior Backend Developer będziesz odpowiedzialny za współtworzenie i rozwój architektury serwerowej naszych aplikacji. Do Twoich codziennych zadań należeć będzie pisanie czystego i wydajnego kodu oraz optymalizacja istniejących rozwiązań. Będziesz ściśle współpracować z zespołem frontendowym oraz doświadczonymi mentorami, którzy wesprą Cię w codziennej pracy.\n\nWymagania\nPoszukujemy osoby posiadającej podstawową wiedzę z zakresu technologii backendowych oraz relacyjnych baz danych. Ważna jest dla nas silna motywacja do nauki, umiejętność analitycznego myślenia oraz zaangażowanie w powierzone projekty. Oczekujemy również znajomości języka angielskiego na poziomie umożliwiającym swobodne czytanie dokumentacji technicznej.\n\nOferujemy\nOferujemy stabilne zatrudnienie z wynagrodzeniem w przedziale od 7000 do 10000 złotych. Nasza firma umożliwia pracę w trybie w pełni zdalnym, dzięki czemu możesz realizować swoje obowiązki z dowolnego miejsca w kraju. Zapewniamy również nowoczesny sprzęt roboczy, elastyczne godziny pracy oraz wsparcie doświadczonych programistów."
   },
   {
     "title": "Python Developer",
@@ -67,8 +110,14 @@
     "city": "Warszawa",
     "salary_min": 11000,
     "salary_max": 15000,
-    "skills": ["python", "django", "sql"],
-    "remote": false
+    "remote": false,
+    "skills": [
+      "python",
+      "django",
+      "sql"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nAcme to dynamicznie rozwijająca się firma technologiczna z siedzibą w Warszawie, która tworzy nowoczesne rozwiązania dla biznesu. Nasz zespół składa się z pasjonatów, którzy codziennie stawiają czoła ciekawym wyzwaniom programistycznym. Dbamy o przyjazną atmosferę i ciągły rozwój naszych pracowników, oferując im stabilne środowisko pracy.\n\nObowiązki\nJako Python Developer będziesz odpowiedzialny za projektowanie i rozwijanie naszych autorskich aplikacji oraz systemów wewnętrznych. Do Twoich zadań będzie należało pisanie czystego, wydajnego kodu oraz integracja z bazami danych. Będziesz także ściśle współpracować z zespołem projektowym w celu optymalizacji istniejących rozwiązań.\n\nWymagania\nPoszukujemy osoby, która posiada bardzo dobrą, praktyczną znajomość języka Python oraz frameworka Django. Niezbędna na tym stanowisku jest również umiejętność pracy z relacyjnymi bazami danych i dobra znajomość języka SQL. Z uwagi na charakter pracy w naszym warszawskim biurze, wymagamy gotowości do pracy stacjonarnej.\n\nOferujemy\nOferujemy stabilne zatrudnienie w biurze w Warszawie z wynagrodzeniem w przedziale od 11000 do 15000 złotych. Zapewniamy nowoczesne narzędzia pracy, wsparcie doświadczonych specjalistów oraz możliwość realnego wpływu na kształt tworzonych projektów. W naszym zespole zyskasz przestrzeń do podnoszenia swoich kwalifikacji zawodowych."
   },
   {
     "title": "Data Engineer",
@@ -76,8 +125,15 @@
     "city": "Wrocław",
     "salary_min": 13000,
     "salary_max": 19000,
-    "skills": ["python", "sql", "airflow", "docker"],
-    "remote": true
+    "remote": true,
+    "skills": [
+      "python",
+      "sql",
+      "airflow",
+      "docker"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nVistula Analytics to dynamicznie rozwijająca się firma technologiczna z siedzibą we Wrocławiu, która specjalizuje się w zaawansowanej analizie danych. Tworzymy innowacyjne rozwiązania, które pomagają naszym klientom podejmować kluczowe decyzje biznesowe na podstawie rzetelnych informacji. Nasz zespół składa się z pasjonatów, którzy stale poszukują nowych sposobów na optymalizację procesów przetwarzania danych.\n\nObowiązki\nNa stanowisku Data Engineer będziesz odpowiedzialny za projektowanie, budowanie oraz utrzymanie nowoczesnych rurociągów danych. Do Twoich zadań należeć będzie optymalizacja zapytań bazodanowych oraz automatyzacja procesów przepływu informacji w naszych systemach. Będziesz również ściśle współpracować z zespołem analityków, aby zapewnić najwyższą jakość i spójność dostarczanych danych.\n\nWymagania\nPoszukujemy kandydatów, którzy posiadają praktyczną znajomość języka python oraz potrafią sprawnie pisać zaawansowane zapytania w języku sql. Niezbędne w codziennej pracy będzie również doświadczenie w orkiestracji zadań za pomocą narzędzia airflow oraz znajomość technologii docker. Oczekujemy także umiejętności analitycznego myślenia oraz zaangażowania w realizowane projekty.\n\nOferujemy\nOferujemy stabilne zatrudnienie z wynagrodzeniem w przedziale od 13000 do 19000 złotych miesięcznie, dopasowanym do Twojego doświadczenia i umiejętności. Zapewniamy w pełni zdalny tryb pracy, dzięki czemu możesz realizować swoje zadania z dowolnego miejsca w kraju. Gwarantujemy również przyjazną atmosferę w zespole, profesjonalne narzędzia pracy oraz możliwość rozwoju w projektach dla renomowanych klientów."
   },
   {
     "title": "LLM Engineer",
@@ -85,8 +141,15 @@
     "city": "Kraków",
     "salary_min": 18000,
     "salary_max": 26000,
-    "skills": ["python", "langchain", "openai", "rag"],
-    "remote": true
+    "remote": true,
+    "skills": [
+      "python",
+      "langchain",
+      "openai",
+      "rag"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nLumen AI to dynamicznie rozwijająca się firma technologiczna z siedzibą w Krakowie, która specjalizuje się w tworzeniu nowoczesnych rozwiązań opartych na sztucznej inteligencji. Nasz zespół składa się z pasjonatów, którzy codziennie przesuwają granice możliwości technologii LLM i systemów poznawczych. Wierzymy, że dzięki innowacyjnemu podejściu możemy realnie usprawnić procesy biznesowe naszych klientów na całym świecie.\n\nObowiązki\nJako LLM Engineer będziesz odpowiedzialny za projektowanie, wdrażanie oraz optymalizację zaawansowanych systemów opartych na dużych modelach językowych. Do Twoich zadań należeć będzie tworzenie aplikacji wykorzystujących architekturę RAG oraz integracja zewnętrznych narzędzi i baz wiedzy. Będziesz ściśle współpracować z zespołem inżynierów danych oraz produktowców, aby dostarczać niezawodne i skalowalne rozwiązania AI.\n\nWymagania\nSzukamy osoby, która posiada bardzo dobrą i popartą doświadczeniem komercyjnym znajomość języka Python. Niezbędne w codziennej pracy będzie praktyczne doświadczenie w pracy z biblioteką LangChain oraz technologiami od OpenAI. Dodatkowo wymagamy dogłębnej znajomości architektury RAG i umiejętności jej skutecznego wdrażania w realnych projektach.\n\nOferujemy\nOferujemy atrakcyjne wynagrodzenie w przedziale od 18000 do 26000 złotych, dopasowane do Twoich umiejętności i doświadczenia. Zapewniamy w pełni zdalny tryb pracy, dzięki czemu możesz realizować swoje zadania z dowolnego miejsca w Polsce. Oprócz tego gwarantujemy pracę przy innowacyjnych projektach w przyjaznej atmosferze oraz dostęp do najnowszych technologii na rynku."
   },
   {
     "title": "Software Engineer",
@@ -94,8 +157,13 @@
     "city": "Kraków",
     "salary_min": 9000,
     "salary_max": 13000,
-    "skills": ["python", "sql"],
-    "remote": false
+    "remote": false,
+    "skills": [
+      "python",
+      "sql"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nNeptune Systems to dynamicznie rozwijająca się firma technologiczna z siedzibą w Krakowie, która dostarcza innowacyjne rozwiązania programistyczne dla klientów biznesowych. Nasz zespół składa się z pasjonatów technologii, którzy codziennie stawiają czoła ciekawym wyzwaniom inżynieryjnym. Dbamy o wysoką jakość kodu oraz przyjazną atmosferę, która sprzyja ciągłemu rozwojowi zawodowemu.\n\nObowiązki\nJako Software Engineer będziesz odpowiedzialny za projektowanie, wdrażanie oraz rozwój naszych systemów i aplikacji. Do Twoich codziennych zadań należeć będzie pisanie czystego kodu oraz optymalizacja zapytań do baz danych. Będziesz ściśle współpracować z zespołem projektowym, aby dostarczać niezawodne rozwiązania spełniające najwyższe standardy techniczne.\n\nWymagania\nPoszukujemy osoby, która posiada praktyczną znajomość języka Python oraz potrafi sprawnie posługiwać się językiem SQL. Kandydat powinien wykazywać się umiejętnością analitycznego myślenia oraz chęcią do pracy stacjonarnej w naszym biurze w Krakowie. Doświadczenie w pracy nad projektami zespołowymi będzie dodatkowym atutem na tym stanowisku.\n\nOferujemy\nOferujemy stabilne zatrudnienie w krakowskim biurze z atrakcyjnym wynagrodzeniem w przedziale od 9000 do 13000 złotych brutto. Zapewniamy nowoczesne narzędzia pracy, stabilne warunki zatrudnienia oraz wsparcie doświadczonych specjalistów na każdym etapie wdrożenia. Nasz zespół regularnie uczestniczy w szkoleniach i spotkaniach integracyjnych, co pozwala na budowanie świetnych relacji w pracy."
   },
   {
     "title": "Junior AI Engineer",
@@ -103,8 +171,13 @@
     "city": "Poznań",
     "salary_min": null,
     "salary_max": 11000,
-    "skills": ["python", "openai"],
-    "remote": true
+    "remote": true,
+    "skills": [
+      "python",
+      "openai"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nSkyline Software to dynamicznie rozwijająca się firma technologiczna z siedzibą w Poznaniu, która tworzy innowacyjne rozwiązania dla biznesu. Nasz zespół składa się z pasjonatów, którzy codziennie kształtują przyszłość branży IT poprzez wdrażanie nowoczesnych systemów. Stawiamy na ciągły rozwój, otwartą komunikację oraz partnerskie relacje na każdym szczeblu organizacji.\n\nObowiązki\nJasno określona rola Junior AI Engineer wiąże się ze współtworzeniem i wdrażaniem nowoczesnych rozwiązań opartych na sztucznej inteligencji. Do Twoich głównych zadań należeć będzie integracja modeli językowych oraz optymalizacja istniejących algorytmów. Będziesz ściśle współpracować z doświadczonymi programistami, co pozwoli Ci szybko rozwijać swoje umiejętności techniczne.\n\nWymagania\nPoszukujemy osoby, która posiada już pierwsze doświadczenie w programowaniu w języku Python oraz zna środowisko OpenAI. Warunkiem koniecznym jest chęć do ciągłej nauki, umiejętność analitycznego myślenia oraz dobra znajomość języka angielskiego. Docenimy również duże zaangażowanie, proaktywność oraz umiejętność sprawnej pracy w zespole projektowym.\n\nOferujemy\nOferujemy stabilne zatrudnienie z wynagrodzeniem sięgającym do 11000 złotych, dopasowanym do Twoich dotychczasowych umiejętności. Praca odbywa się w pełni zdalnie, dzięki czemu możesz realizować swoje codzienne zadania z dowolnego miejsca w kraju. Zapewniamy także dostęp do nowoczesnych narzędzi pracy, budżet szkoleniowy oraz wsparcie doświadczonych mentorów na każdym etapie kariery."
   },
   {
     "title": "DevOps Engineer",
@@ -112,8 +185,14 @@
     "city": "Warszawa",
     "salary_min": 12000,
     "salary_max": 18000,
-    "skills": ["docker", "kubernetes", "python"],
-    "remote": false
+    "remote": false,
+    "skills": [
+      "docker",
+      "kubernetes",
+      "python"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nCodewave to dynamicznie rozwijający się software house z siedzibą w Warszawie, który tworzy innowacyjne rozwiązania technologiczne dla klientów z całego świata. Nasz zespół składa się z pasjonatów, którzy stawiają na jakość kodu oraz nowoczesne podejście do tworzenia oprogramowania. Dbamy o to, aby każdy pracownik miał realny wpływ na realizowane projekty i mógł rozwijać swoje skrzydła w przyjaznej atmosferze.\n\nObowiązki\nJako DevOps Engineer w naszym zespole będziesz odpowiedzialny za projektowanie, wdrażanie oraz utrzymanie nowoczesnej infrastruktury chmurowej. Do Twoich zadań należeć będzie także automatyzacja procesów wdrażania oprogramowania oraz optymalizacja wydajności systemów produkcyjnych. Będziesz ściśle współpracować z zespołem programistów, wspierając ich w codziennych wyzwaniach technicznych.\n\nWymagania\nNa tym stanowisku niezbędna jest praktyczna i biegła znajomość narzędzi Docker oraz Kubernetes, które stanowią fundament naszej infrastruktury. Szukamy osoby potrafiącej pisać skrypty w języku Python, co pozwoli na sprawną automatyzację codziennych zadań. Oczekujemy również zaangażowania w rozwiązywanie problemów oraz gotowości do pracy stacjonarnej w naszym biurze w Warszawie.\n\nOferujemy\nOferujemy stabilne zatrudnienie w biurze w Warszawie z wynagrodzeniem w przedziale od 12000 do 18000 złotych, dostosowanym do Twojego doświadczenia. Zapewniamy pracę stacjonarną w nowoczesnym biurze, gdzie czekają na Ciebie ciekawe wyzwania oraz wspierający zespół specjalistów. Otrzymasz także niezbędne narzędzia pracy oraz możliwość ciągłego podnoszenia kwalifikacji zawodowych."
   },
   {
     "title": "Python Backend Intern",
@@ -121,8 +200,13 @@
     "city": "Gdańsk",
     "salary_min": 4000,
     "salary_max": 6000,
-    "skills": ["python", "sql"],
-    "remote": true
+    "remote": true,
+    "skills": [
+      "python",
+      "sql"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nDeepGdansk to innowacyjna firma technologiczna z siedzibą w Gdańsku, która dynamicznie rozwija nowoczesne rozwiązania backendowe. Nasz zespół składa się z doświadczonych programistów i pasjonatów, którzy chętnie dzielą się swoją wiedzą z osobami stawiającymi pierwsze kroki w branży IT. Tworzymy zgrany zespół, który stawia na ciągły rozwój i wykorzystanie najnowszych technologii w codziennej pracy.\n\nObowiązki\nJako stażysta będziesz aktywnie uczestniczyć w projektowaniu oraz wdrażaniu nowych funkcji w naszych systemach backendowych. Do Twoich zadań należeć będzie pisanie czystego kodu oraz optymalizacja istniejących rozwiązań pod okiem doświadczonych mentorów. Będziesz również brać udział w codziennych spotkaniach zespołu i uczyć się dobrych praktyk programistycznych w rzeczywistych projektach.\n\nWymagania\nPoszukujemy osób, które posiadają podstawową wiedzę z zakresu programowania w języku Python oraz potrafią posługiwać się bazami danych i językiem SQL. Ważna jest dla nas chęć do nauki, umiejętność analitycznego myślenia oraz zaangażowanie w powierzone zadania. Dodatkowym atutem będzie umiejętność pracy w zespole oraz chęć ciągłego rozwijania swoich umiejętności technicznych.\n\nOferujemy\nOferujemy płatny staż z wynagrodzeniem w przedziale od 4000 do 6000 złotych miesięcznie. Zapewniamy w pełni zdalny tryb pracy, co pozwala na elastyczne łączenie obowiązków z nauką na uczelni. Gwarantujemy wsparcie dedykowanego mentora, dostęp do nowoczesnych narzędzi pracy oraz realną szansę na stałe zatrudnienie po zakończeniu stażu."
   },
   {
     "title": "Research Engineer",
@@ -130,8 +214,15 @@
     "city": "Warszawa",
     "salary_min": 20000,
     "salary_max": 30000,
-    "skills": ["python", "pytorch", "rag", "docker"],
-    "remote": true
+    "remote": true,
+    "skills": [
+      "python",
+      "pytorch",
+      "rag",
+      "docker"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nLumen AI to innowacyjna firma technologiczna z siedzibą w Warszawie, która dynamicznie rozwija się w obszarze sztucznej inteligencji. Tworzymy zaawansowane rozwiązania, które pomagają przedsiębiorstwom na całym świecie optymalizować ich codzienne procesy. Nasz zespół składa się z pasjonatów nauki i technologii, którzy wspólnie kształtują przyszłość branży AI.\n\nObowiązki\nNa stanowisku Research Engineer będziesz odpowiedzialny za projektowanie, wdrażanie oraz optymalizację nowoczesnych modeli uczenia maszynowego. Do Twoich zadań należeć będzie także ścisła współpraca z zespołem inżynierów w celu integracji opracowanych rozwiązań z naszymi systemami. Będziesz również śledzić najnowsze trendy naukowe i przekładać je na praktyczne funkcjonalności w produktach.\n\nWymagania\nSzukamy kandydata, który posiada doskonałą znajomość języka Python oraz biblioteki PyTorch do budowy zaawansowanych modeli. Oczekujemy również praktycznego doświadczenia w pracy z technologią RAG oraz umiejętności konteneryzacji aplikacji przy użyciu narzędzia Docker. Dodatkowym atutem będzie umiejętność samodzielnego rozwiązywania skomplikowanych problemów badawczych.\n\nOferujemy\nOferujemy stabilne zatrudnienie z atrakcyjnym wynagrodzeniem miesięcznym w przedziale od 20000 do 30000 złotych. Praca na tym stanowisku odbywa się w trybie w pełni zdalnym, co pozwala na dużą elastyczność w codziennym działaniu. Zapewniamy współpracę z doświadczonym zespołem z Warszawy oraz dostęp do najnowszych technologii i narzędzi pracy."
   },
   {
     "title": "Data Scientist",
@@ -139,8 +230,13 @@
     "city": "Wrocław",
     "salary_min": 11000,
     "salary_max": 16000,
-    "skills": ["python", "sql"],
-    "remote": false
+    "remote": false,
+    "skills": [
+      "python",
+      "sql"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nVistula Analytics to dynamicznie rozwijająca się firma technologiczna, która dostarcza zaawansowane rozwiązania z zakresu analizy danych dla klientów biznesowych. Nasz zespół składa się z pasjonatów, którzy codziennie stawiają czoła ciekawym wyzwaniom analitycznym. Obecnie poszukujemy utalentowanej osoby na stanowisko Data Scientist do naszego biura we Wrocławiu.\n\nObowiązki\nNa tym stanowisku będziesz odpowiedzialny za tworzenie zaawansowanych modeli predykcyjnych oraz analizę dużych zbiorów danych. Do Twoich zadań będzie należało także projektowanie algorytmów i ścisła współpraca z zespołem inżynierów w celu wdrażania nowych rozwiązań. Będziesz również przygotowywać raporty i prezentować wyniki analiz kluczowym partnerom biznesowym.\n\nWymagania\nSzukamy kandydatów, którzy posiadają bardzo dobrą i praktyczną znajomość języka Python oraz potrafią sprawnie posługiwać się językiem SQL do pracy z bazami danych. Ważna jest dla nas umiejętność analitycznego myślenia oraz doświadczenie w pracy z danymi. Ze względu na charakter pracy stacjonarnej, wymagamy gotowości do codziennej pracy w naszym wrocławskim biurze.\n\nOferujemy\nOferujemy stabilne zatrudnienie w biurze we Wrocławiu z wynagrodzeniem w przedziale od 11000 do 16000 złotych, zależnym od Twojego doświadczenia. Zapewniamy nowoczesne narzędzia pracy, przyjazną atmosferę w zespole oraz realne możliwości rozwoju zawodowego. Będziesz mieć okazję pracować przy innowacyjnych projektach, które realnie wpływają na rozwój biznesu naszych klientów."
   },
   {
     "title": "Platform Engineer",
@@ -148,8 +244,15 @@
     "city": "Kraków",
     "salary_min": 13000,
     "salary_max": 19000,
-    "skills": ["python", "docker", "kubernetes", "sql"],
-    "remote": true
+    "remote": true,
+    "skills": [
+      "python",
+      "docker",
+      "kubernetes",
+      "sql"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nNeptune Systems to dynamicznie rozwijająca się firma technologiczna z siedzibą w Krakowie, która tworzy nowoczesne rozwiązania IT dla klientów na całym świecie. Nasz zespół składa się z pasjonatów technologii, którzy codziennie dbają o niezawodność i skalowalność rozwijanych platform. Stawiamy na innowacyjność, otwartą komunikację oraz ciągły rozwój naszych pracowników.\n\nObowiązki\nJako Platform Engineer będziesz odpowiadać za projektowanie, wdrażanie oraz utrzymanie stabilnej infrastruktury IT w naszej firmie. Do Twoich zadań należeć będzie automatyzacja procesów wdrożeniowych oraz optymalizacja pracy z kontenerami i bazami danych. Będziesz również ściśle współpracować z zespołami programistycznymi, aby zapewnić najwyższą wydajność rozwijanego oprogramowania.\n\nWymagania\nPoszukujemy osoby z praktyczną znajomością języka Python oraz doświadczeniem w pracy z technologiami Docker i Kubernetes. Wymagamy również bardzo dobrej znajomości relacyjnych baz danych oraz biegłego posługiwania się językiem SQL. Ważna jest dla nas umiejętność analitycznego myślenia oraz chęć rozwiązywania złożonych problemów infrastrukturalnych.\n\nOferujemy\nOferujemy atrakcyjne wynagrodzenie w przedziale od 13000 do 19000 PLN w zależności od Twoich umiejętności i doświadczenia. Zapewniamy w pełni zdalny tryb pracy z możliwością korzystania z naszego biura w Krakowie. Gwarantujemy elastyczne godziny pracy, stabilne zatrudnienie oraz budżet szkoleniowy na Twój rozwój zawodowy."
   },
   {
     "title": "Junior Fullstack Developer",
@@ -157,7 +260,12 @@
     "city": "Poznań",
     "salary_min": 6500,
     "salary_max": 9500,
-    "skills": ["python", "react"],
-    "remote": false
+    "remote": false,
+    "skills": [
+      "python",
+      "react"
+    ],
+    "skills_nice_to_have": [],
+    "description": "O firmie\nCodewave to dynamicznie rozwijająca się firma technologiczna z siedzibą w Poznaniu, która tworzy nowoczesne rozwiązania internetowe dla klientów z różnych branż. Stawiamy na innowacyjność, dobrą atmosferę oraz ciągły rozwój naszego zespołu programistycznego. Poszukujemy ambitnych talentów, które chcą rozwijać swoje umiejętności i budować z nami wartościowe produkty cyfrowe.\n\nObowiązki\nOsoba na stanowisku Junior Fullstack Developer będzie odpowiedzialna za tworzenie oraz utrzymanie aplikacji internetowych przy użyciu technologii Python oraz React. Do Twoich codziennych zadań należeć będzie projektowanie interfejsów użytkownika, praca nad logiką po stronie serwera oraz dbanie o wysoką jakość kodu. Będziesz również ściśle współpracować z doświadczonym zespołem deweloperskim i brać udział w przeglądach kodu.\n\nWymagania\nPoszukujemy osób z praktyczną znajomością języka Python oraz biblioteki React, które chcą stawiać pierwsze kroki w roli programisty fullstack. Szczególnie cenimy umiejętność analitycznego myślenia, gotowość do nauki nowych narzędzi oraz dobrą organizację pracy własnej. Ze względu na stacjonarny tryb pracy poszukujemy kandydatów dostępnych do pracy w naszym biurze w Poznaniu.\n\nOferujemy\nOferujemy wynagrodzenie w przedziale od 6500 do 9500 PLN miesięcznie, uzależnione od Twoich umiejętności i doświadczenia. Gwarantujemy stabilne zatrudnienie w biurze w Poznaniu oraz przyjazne środowisko wspierające rozwój zawodowy. Zapewniamy dostęp do nowoczesnych narzędzi pracy, wsparcie mentorskie oraz realny wpływ na realizowane projekty."
   }
 ]

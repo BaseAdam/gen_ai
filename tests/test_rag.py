@@ -18,7 +18,8 @@ def save_offers(conn: Connection) -> None:
         Offer(title="B", company="Y", city="Kraków"),
         Offer(title="C", company="Z", city="Gdańsk"),
     ]
-    replace_offers(conn, offers, ["a", "b", "c"], [vec(0.0, 1.0), vec(1.0, 0.0), vec(1.0, 1.0)])
+    vectors = [[vec(0.0, 1.0)], [vec(1.0, 0.0)], [vec(1.0, 1.0)]]
+    replace_offers(conn, offers, [["a"], ["b"], ["c"]], vectors)
 
 
 class FakeRagModels:
@@ -49,12 +50,27 @@ def test_build_prompt_numbers_offers_and_ends_with_question() -> None:
         ScoredOffer(offer=Offer(title="B", company="Y", city="Kraków"), score=0.8),
     ]
 
-    lines = build_prompt("Co wybrać?", results).splitlines()
+    prompt = build_prompt("Co wybrać?", results)
 
-    assert lines[0] == "OFERTY:"
-    assert lines[1].startswith('[1] {"title":"A"')
-    assert lines[2].startswith('[2] {"title":"B"')
-    assert lines[-1] == "PYTANIE: Co wybrać?"
+    assert prompt.startswith('OFERTY:\n[1] {"title":"A"')
+    assert '\n\n[2] {"title":"B"' in prompt
+    assert prompt.endswith("\n\nPYTANIE: Co wybrać?")
+
+
+def test_build_prompt_uses_matched_chunk_instead_of_full_description() -> None:
+    offer = Offer(
+        title="A",
+        company="X",
+        city="Warszawa",
+        description="O firmie\nDługi opis firmy.\n\nOferujemy\nOwoce w biurze.",
+    )
+    results = [ScoredOffer(offer=offer, score=0.9, chunk="A w X\nOferujemy\nOwoce w biurze.")]
+
+    prompt = build_prompt("Co dają?", results)
+
+    assert "Fragment ogłoszenia:\nA w X\nOferujemy\nOwoce w biurze." in prompt
+    assert "Długi opis firmy." not in prompt
+    assert '"description"' not in prompt
 
 
 def test_answer_with_rag_sends_retrieved_offers_to_model(conn: Connection) -> None:
@@ -76,6 +92,7 @@ def test_answer_with_rag_sends_retrieved_offers_to_model(conn: Connection) -> No
     assert generate_call["contents"] == build_prompt("Co wybrać?", result.sources)
     assert '"title":"A"' not in generate_call["contents"]
     assert generate_call["config"].system_instruction == RAG_INSTRUCTION
+    assert generate_call["config"].thinking_config.thinking_level == types.ThinkingLevel.LOW
 
 
 def test_answer_with_rag_applies_filters(conn: Connection) -> None:
