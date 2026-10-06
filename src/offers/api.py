@@ -79,6 +79,8 @@ class AskResponse(BaseModel):
 class RagRequest(BaseModel):
     question: str = Field(min_length=3)
     top_k: int = Field(default=5, ge=1, le=10)
+    city: str | None = None
+    remote: bool | None = None
 
 
 @app.get("/offers")
@@ -120,7 +122,10 @@ def rag(request: RagRequest, client: ClientDep, settings: SettingsDep, conn: Con
         client,
         conn,
         request.question,
-        settings.gemini_model,
-        settings.gemini_embedding_model,
-        request.top_k,
+        chat_model=settings.gemini_model,
+        embedding_model=settings.gemini_embedding_model,
+        top_k=request.top_k,
+        city=request.city,
+        remote=request.remote,
+        min_score=settings.rag_min_score,
     )

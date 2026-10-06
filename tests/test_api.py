@@ -73,7 +73,10 @@ def fake_client() -> FakeClient:
 @pytest.fixture
 def api(fake_client: FakeClient) -> Iterator[TestClient]:
     settings = Settings(
-        gemini_api_key=SecretStr("test-key"), gemini_model="test-model", _env_file=None
+        gemini_api_key=SecretStr("test-key"),
+        gemini_model="test-model",
+        rag_min_score=0.5,
+        _env_file=None,
     )
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_client] = lambda: fake_client
@@ -196,3 +199,27 @@ def test_rag_returns_503_when_database_is_down(api: TestClient, fake_client: Fak
     assert response.status_code == 503
     assert response.json() == {"detail": "Baza danych jest niedostępna"}
     assert fake_client.models.calls == []
+
+
+def test_rag_passes_filters_from_request(
+    api: TestClient, fake_client: FakeClient, conn: Connection
+) -> None:
+    app.dependency_overrides[get_conn] = lambda: conn
+    replace_offers(conn, OFFERS, ["a", "b"], [vec(1.0, 1.0), vec(1.0, 0.0)])
+    fake_client.models.responses = [text_response("Polecam [1].")]
+
+    response = api.post("/rag", json={"question": "Co wybrać?", "remote": False})
+
+    assert [source["offer"]["title"] for source in response.json()["sources"]] == ["A"]
+
+
+def test_rag_uses_min_score_from_settings(
+    api: TestClient, fake_client: FakeClient, conn: Connection
+) -> None:
+    app.dependency_overrides[get_conn] = lambda: conn
+    replace_offers(conn, OFFERS, ["a", "b"], [vec(0.0, 1.0), vec(1.0, 0.0)])
+    fake_client.models.responses = [text_response("Polecam [1].")]
+
+    response = api.post("/rag", json={"question": "Co wybrać?"})
+
+    assert [source["offer"]["title"] for source in response.json()["sources"]] == ["B"]

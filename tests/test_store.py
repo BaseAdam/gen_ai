@@ -51,3 +51,45 @@ def test_replace_offers_overwrites_previous_rows(conn: Connection, offers: list[
 def test_replace_offers_rejects_mismatched_lengths(conn: Connection, offers: list[Offer]) -> None:
     with pytest.raises(ValueError):
         replace_offers(conn, offers, CONTENTS, VECTORS[:2])
+
+
+def test_search_filters_by_city_ignoring_case(conn: Connection, offers: list[Offer]) -> None:
+    replace_offers(conn, offers, CONTENTS, VECTORS)
+
+    ranked = search_offers(conn, vec(1.0, 0.0), city="WARSZAWA")
+
+    assert [item.offer.title for item in ranked] == ["A"]
+
+
+def test_search_filters_by_remote(conn: Connection, offers: list[Offer]) -> None:
+    replace_offers(conn, offers, CONTENTS, VECTORS)
+
+    remote = search_offers(conn, vec(1.0, 0.0), remote=True)
+    onsite = search_offers(conn, vec(1.0, 0.0), remote=False)
+
+    assert [item.offer.title for item in remote] == ["B"]
+    assert [item.offer.title for item in onsite] == ["C", "A"]
+
+
+def test_search_filters_before_limit(conn: Connection, offers: list[Offer]) -> None:
+    replace_offers(conn, offers, CONTENTS, VECTORS)
+
+    ranked = search_offers(conn, vec(1.0, 0.0), top_k=1, city="Gdańsk")
+
+    assert [item.offer.title for item in ranked] == ["C"]
+
+
+def test_search_drops_results_below_min_score(conn: Connection, offers: list[Offer]) -> None:
+    replace_offers(conn, offers, CONTENTS, VECTORS)
+
+    ranked = search_offers(conn, vec(1.0, 0.0), min_score=0.5)
+
+    assert [item.offer.title for item in ranked] == ["B", "C"]
+
+
+def test_search_returns_nothing_for_unrelated_query(conn: Connection, offers: list[Offer]) -> None:
+    replace_offers(conn, offers, CONTENTS, VECTORS)
+
+    ranked = search_offers(conn, vec(0.0, 0.0, 1.0), min_score=0.5)
+
+    assert ranked == []

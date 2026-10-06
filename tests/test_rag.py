@@ -4,12 +4,21 @@ from google.genai import types
 
 from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer, ScoredOffer
-from offers.rag import RAG_INSTRUCTION, answer_with_rag, build_prompt
+from offers.rag import NO_RESULTS_ANSWER, RAG_INSTRUCTION, answer_with_rag, build_prompt
 from offers.store import Connection, replace_offers
 
 
 def vec(*head: float) -> list[float]:
     return list(head) + [0.0] * (EMBEDDING_DIMENSIONS - len(head))
+
+
+def save_offers(conn: Connection) -> None:
+    offers = [
+        Offer(title="A", company="X", city="Warszawa"),
+        Offer(title="B", company="Y", city="Kraków"),
+        Offer(title="C", company="Z", city="Gdańsk"),
+    ]
+    replace_offers(conn, offers, ["a", "b", "c"], [vec(0.0, 1.0), vec(1.0, 0.0), vec(1.0, 1.0)])
 
 
 class FakeRagModels:
@@ -49,12 +58,7 @@ def test_build_prompt_numbers_offers_and_ends_with_question() -> None:
 
 
 def test_answer_with_rag_sends_retrieved_offers_to_model(conn: Connection) -> None:
-    offers = [
-        Offer(title="A", company="X", city="Warszawa"),
-        Offer(title="B", company="Y", city="Kraków"),
-        Offer(title="C", company="Z", city="Gdańsk"),
-    ]
-    replace_offers(conn, offers, ["a", "b", "c"], [vec(0.0, 1.0), vec(1.0, 0.0), vec(1.0, 1.0)])
+    save_offers(conn)
     client = FakeRagClient("Polecam [1].")
 
     result = answer_with_rag(client, conn, "Co wybrać?", "chat-model", "embed-model", top_k=2)
@@ -72,3 +76,35 @@ def test_answer_with_rag_sends_retrieved_offers_to_model(conn: Connection) -> No
     assert generate_call["contents"] == build_prompt("Co wybrać?", result.sources)
     assert '"title":"A"' not in generate_call["contents"]
     assert generate_call["config"].system_instruction == RAG_INSTRUCTION
+
+
+def test_answer_with_rag_applies_filters(conn: Connection) -> None:
+    save_offers(conn)
+    client = FakeRagClient("Polecam [1].")
+
+    result = answer_with_rag(
+        client, conn, "Co wybrać?", "chat-model", "embed-model", city="Gdańsk", remote=False
+    )
+
+    assert [item.offer.title for item in result.sources] == ["C"]
+    assert '"title":"B"' not in client.models.generate_calls[0]["contents"]
+
+
+def test_answer_with_rag_skips_model_when_nothing_matches(conn: Connection) -> None:
+    save_offers(conn)
+    client = FakeRagClient("Polecam [1].")
+
+    result = answer_with_rag(client, conn, "Co wybrać?", "chat-model", "embed-model", city="Poznań")
+
+    assert result.answer == NO_RESULTS_ANSWER
+    assert result.sources == []
+    assert client.models.generate_calls == []
+
+
+def test_answer_with_rag_applies_min_score(conn: Connection) -> None:
+    save_offers(conn)
+    client = FakeRagClient("Polecam [1].")
+
+    result = answer_with_rag(client, conn, "Co wybrać?", "chat-model", "embed-model", min_score=0.8)
+
+    assert [item.offer.title for item in result.sources] == ["B"]
