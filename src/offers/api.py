@@ -1,7 +1,9 @@
+from collections.abc import Iterator
 from functools import lru_cache
 from typing import Annotated
 
 import httpx
+import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from google import genai
@@ -13,7 +15,9 @@ from offers.assistant import answer_question
 from offers.config import Settings
 from offers.io import load_offers
 from offers.llm import convert_offer_text_to_structure, create_client, stream_interview_tips
-from offers.models import Offer
+from offers.models import Offer, RagAnswer
+from offers.rag import answer_with_rag
+from offers.store import Connection, connect
 
 app = FastAPI(title="Offers API")
 
@@ -26,6 +30,11 @@ def handle_timeout(request: Request, exc: httpx.TimeoutException) -> JSONRespons
 @app.exception_handler(errors.APIError)
 def handle_api_error(request: Request, exc: errors.APIError) -> JSONResponse:
     return JSONResponse(status_code=502, content={"detail": "Błąd usługi modelu"})
+
+
+@app.exception_handler(psycopg.OperationalError)
+def handle_database_error(request: Request, exc: psycopg.OperationalError) -> JSONResponse:
+    return JSONResponse(status_code=503, content={"detail": "Baza danych jest niedostępna"})
 
 
 @lru_cache
@@ -43,6 +52,14 @@ def get_offers() -> list[Offer]:
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
+
+
+def get_conn(settings: SettingsDep) -> Iterator[Connection]:
+    with connect(settings.database_url) as conn:
+        yield conn
+
+
+ConnDep = Annotated[Connection, Depends(get_conn)]
 ClientDep = Annotated[genai.Client, Depends(get_client)]
 OffersDep = Annotated[list[Offer], Depends(get_offers)]
 
@@ -57,6 +74,11 @@ class AskRequest(BaseModel):
 
 class AskResponse(BaseModel):
     answer: str
+
+
+class RagRequest(BaseModel):
+    question: str = Field(min_length=3)
+    top_k: int = Field(default=5, ge=1, le=10)
 
 
 @app.get("/offers")
@@ -90,3 +112,15 @@ def offer_tips(
         raise HTTPException(status_code=404, detail="Nie ma takiej oferty")
     stream = stream_interview_tips(client, offers[index], settings.gemini_model)
     return StreamingResponse(stream, media_type="text/plain; charset=utf-8")
+
+
+@app.post("/rag")
+def rag(request: RagRequest, client: ClientDep, settings: SettingsDep, conn: ConnDep) -> RagAnswer:
+    return answer_with_rag(
+        client,
+        conn,
+        request.question,
+        settings.gemini_model,
+        settings.gemini_embedding_model,
+        request.top_k,
+    )

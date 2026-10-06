@@ -42,3 +42,8 @@ class OfferSummary(BaseModel):
 class ScoredOffer(BaseModel):
     offer: Offer
     score: float
+
+
+class RagAnswer(BaseModel):
+    answer: str
+    sources: list[ScoredOffer]

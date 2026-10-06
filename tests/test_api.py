@@ -3,19 +3,26 @@ from types import SimpleNamespace
 from typing import Any
 
 import httpx
+import psycopg
 import pytest
 from fastapi.testclient import TestClient
 from google.genai import errors, types
 from pydantic import SecretStr
 
-from offers.api import app, get_client, get_offers, get_settings
+from offers.api import app, get_client, get_conn, get_offers, get_settings
 from offers.config import Settings
+from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer
+from offers.store import Connection, replace_offers
 
 OFFERS = [
     Offer(title="A", company="X", city="Warszawa", salary_min=10000, salary_max=20000),
     Offer(title="B", company="Y", city="Kraków", remote=True, skills=["python"]),
 ]
+
+
+def vec(*head: float) -> list[float]:
+    return list(head) + [0.0] * (EMBEDDING_DIMENSIONS - len(head))
 
 
 def text_response(text: str) -> types.GenerateContentResponse:
@@ -46,6 +53,11 @@ class FakeModels:
         self.calls.append(kwargs)
         for text in self.chunks:
             yield SimpleNamespace(text=text)
+
+    def embed_content(self, **kwargs: Any) -> types.EmbedContentResponse:
+        self.calls.append(kwargs)
+        embedding = types.ContentEmbedding(values=vec(1.0, 0.0))
+        return types.EmbedContentResponse(embeddings=[embedding])
 
 
 class FakeClient:
@@ -155,3 +167,32 @@ def test_model_error_returns_502_without_details(api: TestClient, fake_client: F
 
     assert response.status_code == 502
     assert "internal detail" not in response.text
+
+
+def test_rag_returns_answer_with_sources(
+    api: TestClient, fake_client: FakeClient, conn: Connection
+) -> None:
+    app.dependency_overrides[get_conn] = lambda: conn
+    replace_offers(conn, OFFERS, ["a", "b"], [vec(0.0, 1.0), vec(1.0, 0.0)])
+    fake_client.models.responses = [text_response("Polecam [1].")]
+
+    response = api.post("/rag", json={"question": "Co wybrać?", "top_k": 1})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["answer"] == "Polecam [1]."
+    assert [source["offer"]["title"] for source in body["sources"]] == ["B"]
+    assert body["sources"][0]["score"] == pytest.approx(1.0)
+
+
+def test_rag_returns_503_when_database_is_down(api: TestClient, fake_client: FakeClient) -> None:
+    def broken_conn() -> Connection:
+        raise psycopg.OperationalError("connection refused")
+
+    app.dependency_overrides[get_conn] = broken_conn
+
+    response = api.post("/rag", json={"question": "Co wybrać?"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Baza danych jest niedostępna"}
+    assert fake_client.models.calls == []
