@@ -141,3 +141,21 @@ def test_both_searches_return_the_same_offer_id(conn: Connection, offers: list[O
 
     assert semantic.offer.title == keyword.offer.title == "B"
     assert semantic.offer_id == keyword.offer_id != 0
+
+
+def test_create_schema_adds_vector_index(conn: Connection) -> None:
+    rows = conn.execute(
+        "SELECT indexdef FROM pg_indexes "
+        "WHERE schemaname = current_schema() AND tablename = 'chunks'"
+    ).fetchall()
+
+    assert any("hnsw" in row[0] and "vector_cosine_ops" in row[0] for row in rows)
+
+
+def test_search_widens_hnsw_candidate_list(conn: Connection, offers: list[Offer]) -> None:
+    replace_offers(conn, offers, CONTENTS, VECTORS)
+
+    search_offers(conn, vec(1.0, 0.0))
+
+    [row] = conn.execute("SHOW hnsw.ef_search").fetchall()
+    assert row[0] == "100"

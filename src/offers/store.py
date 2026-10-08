@@ -24,24 +24,37 @@ CREATE TABLE IF NOT EXISTS chunks (
 )
 """
 
+CREATE_VECTOR_INDEX = """
+CREATE INDEX IF NOT EXISTS chunks_embedding_idx
+ON chunks USING hnsw (embedding vector_cosine_ops)
+"""
+
 INSERT_OFFER = "INSERT INTO offers (data) VALUES (%s::jsonb) RETURNING id"
 
 INSERT_CHUNK = "INSERT INTO chunks (offer_id, content, embedding) VALUES (%s, %s, %s::vector)"
 
 
+CANDIDATE_CHUNKS = 100
+
 SEARCH_OFFERS = """
-SELECT id, data, content, score
-FROM (
-    SELECT DISTINCT ON (offers.id)
+WITH nearest AS (
+    SELECT
         offers.id,
         offers.data,
         chunks.content,
-        1 - (chunks.embedding <=> %(query)s::vector) AS score
+        chunks.embedding <=> %(query)s::vector AS distance
     FROM chunks
     JOIN offers ON offers.id = chunks.offer_id
     WHERE (%(city)s::text IS NULL OR lower(offers.data->>'city') = %(city)s::text)
       AND (%(remote)s::boolean IS NULL OR (offers.data->>'remote')::boolean = %(remote)s::boolean)
-    ORDER BY offers.id, chunks.embedding <=> %(query)s::vector
+    ORDER BY distance
+    LIMIT %(candidates)s
+)
+SELECT id, data, content, score
+FROM (
+    SELECT DISTINCT ON (id) id, data, content, 1 - distance AS score
+    FROM nearest
+    ORDER BY id, distance
 ) AS best
 WHERE %(min_score)s::float8 IS NULL OR score >= %(min_score)s::float8
 ORDER BY score DESC
@@ -65,6 +78,7 @@ def create_schema(conn: Connection) -> None:
     conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
     conn.execute(CREATE_OFFERS)
     conn.execute(CREATE_CHUNKS)
+    conn.execute(CREATE_VECTOR_INDEX)
     conn.commit()
 
 
@@ -102,7 +116,9 @@ def search_offers(
         "city": city.lower() if city else None,
         "remote": remote,
         "min_score": min_score,
+        "candidates": CANDIDATE_CHUNKS,
     }
+    conn.execute(f"SET LOCAL hnsw.ef_search = {CANDIDATE_CHUNKS}")
     rows = conn.execute(SEARCH_OFFERS, params).fetchall()
     return [
         ScoredOffer(offer_id=offer_id, offer=Offer.model_validate(data), score=score, chunk=content)
