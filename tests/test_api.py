@@ -78,6 +78,7 @@ def api(fake_client: FakeClient) -> Iterator[TestClient]:
         gemini_api_key=SecretStr("test-key"),
         gemini_model="test-model",
         rag_min_score=0.5,
+        rag_rerank=False,
         _env_file=None,
     )
     app.dependency_overrides[get_settings] = lambda: settings
@@ -162,6 +163,29 @@ def test_model_timeout_returns_504(api: TestClient, fake_client: FakeClient) -> 
 
     assert response.status_code == 504
     assert response.json() == {"detail": "Model nie odpowiedział na czas"}
+
+
+def test_rag_uses_reranker_when_enabled(
+    api: TestClient, fake_client: FakeClient, conn: Connection
+) -> None:
+    settings = Settings(
+        gemini_api_key=SecretStr("test-key"),
+        gemini_model="test-model",
+        rag_min_score=0.5,
+        rag_rerank=True,
+        _env_file=None,
+    )
+    app.dependency_overrides[get_settings] = lambda: settings
+    app.dependency_overrides[get_conn] = lambda: conn
+    replace_offers(conn, OFFERS, CHUNKS, [[vec(1.0, 1.0)], [vec(1.0, 0.0)]])
+    relevance = '{"scores": [{"index": 1, "score": 2}, {"index": 2, "score": 8}]}'
+    fake_client.models.responses = [text_response(relevance), text_response("Polecam [1].")]
+
+    response = api.post("/rag", json={"question": "Co wybrać?"})
+
+    body = response.json()
+    assert body["answer"] == "Polecam [1]."
+    assert [source["offer"]["title"] for source in body["sources"]] == ["A"]
 
 
 def test_model_error_returns_502_without_details(api: TestClient, fake_client: FakeClient) -> None:

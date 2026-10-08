@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 from google.genai import types
@@ -25,6 +26,7 @@ def save_offers(conn: Connection) -> None:
 class FakeRagModels:
     def __init__(self, answer: str) -> None:
         self.answer = answer
+        self.relevance = '{"scores": []}'
         self.embed_calls: list[dict[str, Any]] = []
         self.generate_calls: list[dict[str, Any]] = []
 
@@ -35,7 +37,9 @@ class FakeRagModels:
 
     def generate_content(self, **kwargs: Any) -> types.GenerateContentResponse:
         self.generate_calls.append(kwargs)
-        content = types.Content(role="model", parts=[types.Part(text=self.answer)])
+        is_rerank = kwargs["config"].response_schema is not None
+        text = self.relevance if is_rerank else self.answer
+        content = types.Content(role="model", parts=[types.Part(text=text)])
         return types.GenerateContentResponse(candidates=[types.Candidate(content=content)])
 
 
@@ -125,3 +129,35 @@ def test_answer_with_rag_applies_min_score(conn: Connection) -> None:
     result = answer_with_rag(client, conn, "Co wybrać?", "chat-model", "embed-model", min_score=0.8)
 
     assert [item.offer.title for item in result.sources] == ["B"]
+
+
+def relevance(*scores: int) -> str:
+    items = [{"index": number, "score": score} for number, score in enumerate(scores, start=1)]
+    return json.dumps({"scores": items})
+
+
+def test_answer_with_rag_reranks_candidates(conn: Connection) -> None:
+    save_offers(conn)
+    client = FakeRagClient("Polecam [1].")
+    client.models.relevance = relevance(3, 4, 9)
+
+    result = answer_with_rag(
+        client, conn, "Co wybrać?", "chat-model", "embed-model", use_rerank=True
+    )
+
+    assert [item.offer.title for item in result.sources] == ["A"]
+    assert len(client.models.generate_calls) == 2
+    assert '"title":"B"' not in client.models.generate_calls[1]["contents"]
+
+
+def test_answer_with_rag_skips_model_when_reranker_rejects_everything(conn: Connection) -> None:
+    save_offers(conn)
+    client = FakeRagClient("Polecam [1].")
+    client.models.relevance = relevance(1, 2, 0)
+
+    result = answer_with_rag(
+        client, conn, "Co wybrać?", "chat-model", "embed-model", use_rerank=True
+    )
+
+    assert result.answer == NO_RESULTS_ANSWER
+    assert len(client.models.generate_calls) == 1

@@ -11,10 +11,16 @@ if __name__ == "__main__":
 
     with connect(settings.database_url) as conn:
         result = answer_with_rag(
-            client, conn, QUESTION, settings.gemini_model, settings.gemini_embedding_model
+            client,
+            conn,
+            QUESTION,
+            settings.gemini_model,
+            settings.gemini_embedding_model,
+            min_score=settings.rag_min_score,
+            use_rerank=settings.rag_rerank,
         )
 
     print(result.answer)
     print()
     for number, item in enumerate(result.sources, start=1):
-        print(f"[{number}] {item.score:.3f}  {item.offer}")
+        print(f"[{number}] {item.score:>4}  {item.offer}")

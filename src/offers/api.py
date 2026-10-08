@@ -128,4 +128,5 @@ def rag(request: RagRequest, client: ClientDep, settings: SettingsDep, conn: Con
         city=request.city,
         remote=request.remote,
         min_score=settings.rag_min_score,
+        use_rerank=settings.rag_rerank,
     )

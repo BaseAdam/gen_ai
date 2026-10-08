@@ -3,6 +3,7 @@ from google.genai import types
 
 from offers.embeddings import embed_texts
 from offers.models import RagAnswer, ScoredOffer
+from offers.rerank import rerank
 from offers.retrieval import hybrid_search
 from offers.store import Connection
 
@@ -14,6 +15,8 @@ RAG_INSTRUCTION = (
 )
 
 NO_RESULTS_ANSWER = "Nie znalazłem ofert spełniających te warunki."
+
+RERANK_CANDIDATES = 10
 
 
 def format_source(number: int, item: ScoredOffer) -> str:
@@ -37,11 +40,15 @@ def answer_with_rag(
     city: str | None = None,
     remote: bool | None = None,
     min_score: float | None = None,
+    use_rerank: bool = False,
 ) -> RagAnswer:
     [query_vector] = embed_texts(client, [question], embedding_model, "RETRIEVAL_QUERY")
+    pool = RERANK_CANDIDATES if use_rerank else top_k
     results = hybrid_search(
-        conn, query_vector, question, top_k, city=city, remote=remote, min_score=min_score
+        conn, query_vector, question, pool, city=city, remote=remote, min_score=min_score
     )
+    if use_rerank:
+        results = rerank(client, question, results, chat_model, top_k)
     if not results:
         return RagAnswer(answer=NO_RESULTS_ANSWER, sources=[])
 

@@ -11,3 +11,4 @@ class Settings(BaseSettings):
     gemini_embedding_model: str = "gemini-embedding-001"
     database_url: str = "postgresql://offers:offers@localhost:5432/offers"
     rag_min_score: float = Field(default=0.6, ge=0, le=1)
+    rag_rerank: bool = True
