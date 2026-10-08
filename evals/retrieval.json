@@ -1,0 +1,172 @@
+[
+  {
+    "id": "sprzet",
+    "question": "Która firma zapewnia sprzęt do pracy?",
+    "relevant": [
+      "Junior Python Developer",
+      "Backend Engineer",
+      "Junior Backend Developer"
+    ]
+  },
+  {
+    "id": "laptop",
+    "question": "Gdzie pracodawca da mi laptopa?",
+    "relevant": [
+      "Junior Python Developer",
+      "Backend Engineer",
+      "Junior Backend Developer"
+    ]
+  },
+  {
+    "id": "budzet-szkoleniowy",
+    "question": "Gdzie dostanę budżet szkoleniowy?",
+    "relevant": [
+      "Machine Learning Engineer",
+      "Junior AI Engineer",
+      "Platform Engineer"
+    ]
+  },
+  {
+    "id": "elastyczne-godziny",
+    "question": "W której pracy mam elastyczne godziny?",
+    "relevant": [
+      "Junior Backend Developer",
+      "Platform Engineer"
+    ]
+  },
+  {
+    "id": "umowa-o-prace",
+    "question": "Która oferta daje umowę o pracę?",
+    "relevant": [
+      "Data Analyst"
+    ]
+  },
+  {
+    "id": "staz",
+    "question": "Szukam płatnego stażu, który pogodzę ze studiami",
+    "relevant": [
+      "Python Backend Intern"
+    ]
+  },
+  {
+    "id": "airflow",
+    "question": "Praca przy orkiestracji zadań w Airflow",
+    "relevant": [
+      "Data Engineer"
+    ]
+  },
+  {
+    "id": "rag",
+    "question": "Gdzie będę budować systemy RAG?",
+    "relevant": [
+      "LLM Engineer",
+      "Research Engineer"
+    ]
+  },
+  {
+    "id": "kubernetes",
+    "question": "Które oferty wymagają Kubernetesa?",
+    "relevant": [
+      "DevOps Engineer",
+      "Platform Engineer"
+    ]
+  },
+  {
+    "id": "pytorch",
+    "question": "Chcę budować modele w PyTorch",
+    "relevant": [
+      "Machine Learning Engineer",
+      "Research Engineer"
+    ]
+  },
+  {
+    "id": "excel",
+    "question": "Gdzie potrzebna jest znajomość Excela?",
+    "relevant": [
+      "Data Analyst"
+    ]
+  },
+  {
+    "id": "mentor",
+    "question": "Gdzie junior dostanie wsparcie mentora?",
+    "relevant": [
+      "Junior Backend Developer",
+      "Junior AI Engineer",
+      "Python Backend Intern",
+      "Junior Fullstack Developer"
+    ]
+  },
+  {
+    "id": "angielski",
+    "question": "Gdzie wymagają znajomości angielskiego?",
+    "relevant": [
+      "Junior Backend Developer",
+      "Junior AI Engineer"
+    ]
+  },
+  {
+    "id": "django",
+    "question": "Praca z Django",
+    "relevant": [
+      "Python Developer"
+    ]
+  },
+  {
+    "id": "react",
+    "question": "Szukam pracy z Reactem",
+    "relevant": [
+      "Fullstack Developer",
+      "Junior Fullstack Developer"
+    ]
+  },
+  {
+    "id": "integracja",
+    "question": "Która firma organizuje spotkania integracyjne?",
+    "relevant": [
+      "Software Engineer"
+    ]
+  },
+  {
+    "id": "chmura",
+    "question": "Utrzymanie infrastruktury chmurowej",
+    "relevant": [
+      "DevOps Engineer"
+    ]
+  },
+  {
+    "id": "krakow-python-sql",
+    "question": "Praca z Pythonem i SQL",
+    "city": "Kraków",
+    "relevant": [
+      "Backend Engineer",
+      "Software Engineer",
+      "Platform Engineer"
+    ]
+  },
+  {
+    "id": "junior-zdalnie",
+    "question": "Oferta dla juniora",
+    "remote": true,
+    "relevant": [
+      "Junior Python Developer",
+      "Junior Backend Developer",
+      "Junior AI Engineer",
+      "Python Backend Intern"
+    ]
+  },
+  {
+    "id": "kierowca",
+    "question": "Szukam pracy jako kierowca ciężarówki",
+    "relevant": []
+  },
+  {
+    "id": "pierogi",
+    "question": "Jak zrobić pierogi?",
+    "relevant": []
+  },
+  {
+    "id": "francja",
+    "question": "Jaka jest stolica Francji?",
+    "relevant": []
+  }
+]
