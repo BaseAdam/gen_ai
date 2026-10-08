@@ -1,6 +1,16 @@
-import pytest
+from pathlib import Path
+from typing import Any
 
-from offers.evals import load_cases, precision_at_k, recall_at_k, reciprocal_rank
+import pytest
+from google.genai import types
+
+from offers.evals import (
+    embed_questions_cached,
+    load_cases,
+    precision_at_k,
+    recall_at_k,
+    reciprocal_rank,
+)
 from offers.io import load_offers
 
 CASES_PATH = "evals/retrieval.json"
@@ -49,3 +59,41 @@ def test_reciprocal_rank_uses_first_relevant_position() -> None:
 
 def test_reciprocal_rank_is_zero_without_hits() -> None:
     assert reciprocal_rank(RETRIEVED, ["X"]) == 0.0
+
+
+class FakeEmbedModels:
+    def __init__(self) -> None:
+        self.calls: list[list[str]] = []
+
+    def embed_content(self, **kwargs: Any) -> types.EmbedContentResponse:
+        texts = kwargs["contents"]
+        self.calls.append(texts)
+        embeddings = [types.ContentEmbedding(values=[float(len(text))]) for text in texts]
+        return types.EmbedContentResponse(embeddings=embeddings)
+
+
+class FakeEmbedClient:
+    def __init__(self) -> None:
+        self.models = FakeEmbedModels()
+
+
+def test_embed_questions_cached_embeds_only_new_questions(tmp_path: Path) -> None:
+    client = FakeEmbedClient()
+    path = str(tmp_path / "vectors.json")
+
+    first = embed_questions_cached(client, ["ab", "abc"], "model", path)
+    second = embed_questions_cached(client, ["abc", "abcd"], "model", path)
+
+    assert first == {"ab": [2.0], "abc": [3.0]}
+    assert second == {"abc": [3.0], "abcd": [4.0]}
+    assert client.models.calls == [["ab", "abc"], ["abcd"]]
+
+
+def test_embed_questions_cached_skips_api_when_everything_is_cached(tmp_path: Path) -> None:
+    client = FakeEmbedClient()
+    path = str(tmp_path / "vectors.json")
+    embed_questions_cached(client, ["ab"], "model", path)
+
+    embed_questions_cached(client, ["ab"], "model", path)
+
+    assert client.models.calls == [["ab"]]

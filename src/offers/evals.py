@@ -1,6 +1,10 @@
 import json
+import os
 
+from google import genai
 from pydantic import BaseModel, Field
+
+from offers.embeddings import embed_texts
 
 
 class EvalCase(BaseModel):
@@ -37,3 +41,21 @@ def reciprocal_rank(retrieved: list[str], relevant: list[str]) -> float:
         if title in relevant:
             return 1 / rank
     return 0.0
+
+
+def embed_questions_cached(
+    client: genai.Client, questions: list[str], model: str, path: str
+) -> dict[str, list[float]]:
+    cache: dict[str, list[float]] = {}
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            cache = json.load(f)
+
+    missing = [question for question in questions if question not in cache]
+    if missing:
+        vectors = embed_texts(client, missing, model, "RETRIEVAL_QUERY")
+        cache.update(zip(missing, vectors, strict=True))
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False)
+
+    return {question: cache[question] for question in questions}
