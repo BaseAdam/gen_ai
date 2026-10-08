@@ -50,3 +50,12 @@ class ScoredOffer(BaseModel):
 class RagAnswer(BaseModel):
     answer: str
     sources: list[ScoredOffer]
+
+
+class RelevanceScore(BaseModel):
+    index: int
+    score: int = Field(ge=0, le=10)
+
+
+class Relevance(BaseModel):
+    scores: list[RelevanceScore]
