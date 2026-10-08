@@ -2,7 +2,7 @@ import pytest
 
 from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer
-from offers.store import Connection, replace_offers, search_offers
+from offers.store import Connection, replace_offers, search_keywords, search_offers
 
 
 def vec(*head: float) -> list[float]:
@@ -20,6 +20,9 @@ def offers() -> list[Offer]:
 
 CONTENTS = [["text a"], ["text b"], ["text c"]]
 VECTORS = [[vec(0.0, 1.0)], [vec(1.0, 0.0)], [vec(1.0, 1.0)]]
+
+KEYWORD_CONTENTS = [["kawa i biuro"], ["sprzęt oraz biuro oraz kawa", "sprzęt sprzęt"], ["sprzęt"]]
+KEYWORD_VECTORS = [[vec(1.0)], [vec(1.0), vec(1.0)], [vec(1.0)]]
 
 
 def test_search_returns_closest_first(conn: Connection, offers: list[Offer]) -> None:
@@ -109,3 +112,32 @@ def test_search_returns_each_offer_once_with_its_best_chunk(
         ("B", "b1"),
         ("C", "c1"),
     ]
+
+
+def test_search_keywords_ranks_offers_by_best_chunk(conn: Connection, offers: list[Offer]) -> None:
+    replace_offers(conn, offers, KEYWORD_CONTENTS, KEYWORD_VECTORS)
+
+    ranked = search_keywords(conn, "sprzęt")
+
+    assert [(item.offer.title, item.chunk) for item in ranked] == [
+        ("B", "sprzęt sprzęt"),
+        ("C", "sprzęt"),
+    ]
+
+
+def test_search_keywords_applies_filters(conn: Connection, offers: list[Offer]) -> None:
+    replace_offers(conn, offers, KEYWORD_CONTENTS, KEYWORD_VECTORS)
+
+    ranked = search_keywords(conn, "sprzęt", city="Kraków")
+
+    assert [item.offer.title for item in ranked] == ["B"]
+
+
+def test_both_searches_return_the_same_offer_id(conn: Connection, offers: list[Offer]) -> None:
+    replace_offers(conn, offers, [["kawa"], ["sprzęt"], ["biuro"]], VECTORS)
+
+    [semantic] = search_offers(conn, vec(1.0, 0.0), top_k=1)
+    [keyword] = search_keywords(conn, "sprzęt")
+
+    assert semantic.offer.title == keyword.offer.title == "B"
+    assert semantic.offer_id == keyword.offer_id != 0

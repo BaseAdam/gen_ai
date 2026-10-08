@@ -187,7 +187,7 @@ def test_rag_returns_answer_with_sources(
     body = response.json()
     assert body["answer"] == "Polecam [1]."
     assert [source["offer"]["title"] for source in body["sources"]] == ["B"]
-    assert body["sources"][0]["score"] == pytest.approx(1.0)
+    assert body["sources"][0]["score"] == pytest.approx(1 / 61)
 
 
 def test_rag_returns_503_when_database_is_down(api: TestClient, fake_client: FakeClient) -> None:

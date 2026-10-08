@@ -2,6 +2,7 @@ import psycopg
 from psycopg.rows import TupleRow
 
 from offers.embeddings import EMBEDDING_DIMENSIONS
+from offers.keywords import bm25_scores
 from offers.models import Offer, ScoredOffer
 
 type Connection = psycopg.Connection[TupleRow]
@@ -29,9 +30,10 @@ INSERT_CHUNK = "INSERT INTO chunks (offer_id, content, embedding) VALUES (%s, %s
 
 
 SEARCH_OFFERS = """
-SELECT data, content, score
+SELECT id, data, content, score
 FROM (
     SELECT DISTINCT ON (offers.id)
+        offers.id,
         offers.data,
         chunks.content,
         1 - (chunks.embedding <=> %(query)s::vector) AS score
@@ -44,6 +46,14 @@ FROM (
 WHERE %(min_score)s::float8 IS NULL OR score >= %(min_score)s::float8
 ORDER BY score DESC
 LIMIT %(top_k)s
+"""
+
+FETCH_CHUNKS = """
+SELECT offers.id, offers.data, chunks.content
+FROM chunks
+JOIN offers ON offers.id = chunks.offer_id
+WHERE (%(city)s::text IS NULL OR lower(offers.data->>'city') = %(city)s::text)
+  AND (%(remote)s::boolean IS NULL OR (offers.data->>'remote')::boolean = %(remote)s::boolean)
 """
 
 
@@ -95,6 +105,28 @@ def search_offers(
     }
     rows = conn.execute(SEARCH_OFFERS, params).fetchall()
     return [
-        ScoredOffer(offer=Offer.model_validate(data), score=score, chunk=content)
-        for data, content, score in rows
+        ScoredOffer(offer_id=offer_id, offer=Offer.model_validate(data), score=score, chunk=content)
+        for offer_id, data, content, score in rows
     ]
+
+
+def search_keywords(
+    conn: Connection,
+    question: str,
+    top_k: int = 5,
+    city: str | None = None,
+    remote: bool | None = None,
+) -> list[ScoredOffer]:
+    params = {"city": city.lower() if city else None, "remote": remote}
+    rows = conn.execute(FETCH_CHUNKS, params).fetchall()
+    scores = bm25_scores(question, [content for _, _, content in rows])
+
+    best: dict[int, ScoredOffer] = {}
+    for (offer_id, data, content), score in zip(rows, scores, strict=True):
+        if score > 0 and (offer_id not in best or score > best[offer_id].score):
+            best[offer_id] = ScoredOffer(
+                offer_id=offer_id, offer=Offer.model_validate(data), score=score, chunk=content
+            )
+
+    ranked = sorted(best.values(), key=lambda item: item.score, reverse=True)
+    return ranked[:top_k]

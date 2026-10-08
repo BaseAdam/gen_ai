@@ -3,7 +3,8 @@ from google.genai import types
 
 from offers.embeddings import embed_texts
 from offers.models import RagAnswer, ScoredOffer
-from offers.store import Connection, search_offers
+from offers.retrieval import hybrid_search
+from offers.store import Connection
 
 RAG_INSTRUCTION = (
     "Jesteś doradcą kariery. Odpowiadasz wyłącznie na podstawie ofert z sekcji OFERTY. "
@@ -38,8 +39,8 @@ def answer_with_rag(
     min_score: float | None = None,
 ) -> RagAnswer:
     [query_vector] = embed_texts(client, [question], embedding_model, "RETRIEVAL_QUERY")
-    results = search_offers(
-        conn, query_vector, top_k, city=city, remote=remote, min_score=min_score
+    results = hybrid_search(
+        conn, query_vector, question, top_k, city=city, remote=remote, min_score=min_score
     )
     if not results:
         return RagAnswer(answer=NO_RESULTS_ANSWER, sources=[])

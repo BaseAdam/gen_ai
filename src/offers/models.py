@@ -44,6 +44,7 @@ class ScoredOffer(BaseModel):
     offer: Offer
     score: float
     chunk: str = ""
+    offer_id: int = 0
 
 
 class RagAnswer(BaseModel):
