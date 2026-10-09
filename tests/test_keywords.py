@@ -10,6 +10,10 @@ def test_tokenize_lowercases_drops_short_words_and_cuts_endings() -> None:
     ]
 
 
+def test_tokenize_skips_stop_words() -> None:
+    assert tokenize("Gdzie jest sprzęt, który dostanę?") == ["sprzęt", "dostan"]
+
+
 def test_bm25_scores_only_documents_with_query_words() -> None:
     scores = bm25_scores("sprzęt", ["mamy sprzęt", "mamy biuro", "dobra kawa"])
 
@@ -33,3 +37,9 @@ def test_bm25_matches_inflected_forms() -> None:
 
 def test_bm25_without_documents() -> None:
     assert bm25_scores("sprzęt", []) == []
+
+
+def test_bm25_ignores_stop_words() -> None:
+    scores = bm25_scores("Gdzie dostanę laptopa?", ["biuro, gdzie pracujemy", "nowy sprzęt"])
+
+    assert scores == [0.0, 0.0]
