@@ -66,7 +66,9 @@ def row(label: str, values: list[float]) -> str:
 if __name__ == "__main__":
     settings = Settings()
     client = create_client(settings)
-    cases = [case for case in load_cases("evals/retrieval.json") if case.relevant]
+    cases = load_cases("evals/retrieval.json")
+    positives = [case for case in cases if case.relevant]
+    negatives = [case for case in cases if not case.relevant]
     vectors = embed_questions_cached(
         client,
         [case.question for case in cases],
@@ -77,12 +79,13 @@ if __name__ == "__main__":
     recall: dict[str, list[float]] = {name: [] for name in VARIANTS}
     precision: dict[str, list[float]] = {name: [] for name in VARIANTS}
     rr: dict[str, list[float]] = {name: [] for name in VARIANTS}
+    refused: dict[str, list[float]] = {name: [] for name in VARIANTS}
 
     if WITH_RERANK:
         print(f"Reranker: {settings.gemini_model}")
-    print(header("recall@5"))
     with connect(settings.database_url) as conn:
-        for case in cases:
+        print(header("recall@5"))
+        for case in positives:
             rankings = run_variants(conn, client, settings, case, vectors[case.question])
             for name, ranking in rankings.items():
                 retrieved = [item.offer.title for item in ranking]
@@ -93,7 +96,23 @@ if __name__ == "__main__":
             if WITH_RERANK:
                 time.sleep(PAUSE_SECONDS)
 
+        print()
+        print(header("refused"))
+        for case in negatives:
+            rankings = run_variants(conn, client, settings, case, vectors[case.question])
+            for name, ranking in rankings.items():
+                refused[name].append(0.0 if ranking else 1.0)
+            print(row(case.id, [refused[name][-1] for name in VARIANTS]))
+            if WITH_RERANK:
+                time.sleep(PAUSE_SECONDS)
+
+    summary = [
+        ("recall@5", recall),
+        ("precision@5", precision),
+        ("MRR", rr),
+        ("refused", refused),
+    ]
     print()
     print(header("average"))
-    for label, scores in [("recall@5", recall), ("precision@5", precision), ("MRR", rr)]:
+    for label, scores in summary:
         print(row(label, [fmean(scores[name]) for name in VARIANTS]))
