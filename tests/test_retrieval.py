@@ -27,10 +27,20 @@ def test_rrf_score_depends_only_on_rank() -> None:
     assert result.score == pytest.approx(1 / 61)
 
 
-def test_rrf_keeps_chunk_from_first_ranking() -> None:
+def test_rrf_keeps_chunk_from_first_ranking_on_tie() -> None:
     fused = reciprocal_rank_fusion([[item(1, "A", "semantic")], [item(1, "A", "keyword")]])
 
     assert fused[0].chunk == "semantic"
+
+
+def test_rrf_takes_chunk_from_ranking_where_offer_ranks_higher() -> None:
+    semantic = [item(2, "B", "About the company"), item(1, "A", "About the company")]
+    keyword = [item(1, "A", "What we offer")]
+
+    fused = reciprocal_rank_fusion([semantic, keyword])
+
+    assert fused[0].offer.title == "A"
+    assert fused[0].chunk == "What we offer"
 
 
 def save_offers(conn: Connection) -> None:
