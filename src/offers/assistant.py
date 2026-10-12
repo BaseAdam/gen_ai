@@ -10,15 +10,15 @@ from offers.models import Offer
 SEARCH_OFFERS = types.FunctionDeclaration(
     name="search_offers",
     description=(
-        "Wyszukuje oferty pracy w lokalnej bazie. Wszystkie parametry są opcjonalne: "
-        "pomiń te, o które użytkownik nie pytał."
+        "Searches job offers in the local database. All parameters are optional: "
+        "omit the ones the user did not ask about."
     ),
     parameters_json_schema={
         "type": "object",
         "properties": {
-            "city": {"type": "string", "description": "Miasto, np. Warszawa"},
-            "remote": {"type": "boolean", "description": "true = tylko oferty zdalne"},
-            "skill": {"type": "string", "description": "Jedna technologia, np. python"},
+            "city": {"type": "string", "description": "City, e.g. Warsaw"},
+            "remote": {"type": "boolean", "description": "true = remote offers only"},
+            "skill": {"type": "string", "description": "A single technology, e.g. python"},
         },
     },
 )
@@ -39,13 +39,13 @@ def run_search_offers(args: dict[str, Any], offers: list[Offer]) -> list[dict[st
 SALARY_STATS = types.FunctionDeclaration(
     name="salary_stats",
     description=(
-        "Liczy statystyki widełek w PLN (średnia, minimum, maksimum) dla ofert. "
-        "Używaj zawsze, gdy pytanie dotyczy zarobków. Nie licz samodzielnie."
+        "Computes salary statistics in PLN (average, minimum, maximum) for offers. "
+        "Always use it when the question is about salaries. Do not calculate on your own."
     ),
     parameters_json_schema={
         "type": "object",
         "properties": {
-            "city": {"type": "string", "description": "Miasto. Pomiń, żeby objąć wszystkie."},
+            "city": {"type": "string", "description": "City. Omit to include all cities."},
         },
     },
 )
@@ -68,8 +68,8 @@ def run_salary_stats(args: dict[str, Any], offers: list[Offer]) -> dict[str, Any
 
 
 ASSISTANT_INSTRUCTION = (
-    "Jesteś asystentem do wyszukiwania ofert pracy. Odpowiadaj po polsku i krótko. "
-    "Dane o ofertach i zarobkach bierz wyłącznie z narzędzi, niczego nie zgaduj i nie licz sam."
+    "You are a job offer search assistant. Answer in English and keep it short. "
+    "Take offer and salary data only from the tools; never guess or calculate on your own."
 )
 
 
@@ -89,8 +89,8 @@ def run_tool(name: str | None, args: dict[str, Any], offers: list[Offer]) -> dic
         if name == "salary_stats":
             return {"result": run_salary_stats(args, offers)}
     except ValidationError as e:
-        return {"error": f"Błędne argumenty: {e}"}
-    return {"error": f"Nieznane narzędzie: {name}"}
+        return {"error": f"Invalid arguments: {e}"}
+    return {"error": f"Unknown tool: {name}"}
 
 
 def answer_question(
@@ -104,7 +104,7 @@ def answer_question(
         )
         calls = response.function_calls
         if not calls:
-            return response.text or "Brak odpowiedzi"
+            return response.text or "No answer"
 
         if response.candidates and response.candidates[0].content:
             contents.append(response.candidates[0].content)
@@ -114,4 +114,4 @@ def answer_question(
             part = types.Part.from_function_response(name=call.name or "unknown", response=result)
             contents.append(types.Content(role="user", parts=[part]))
 
-    raise RuntimeError("Model nie skończył w dozwolonej liczbie kroków")
+    raise RuntimeError("The model did not finish within the allowed number of steps")

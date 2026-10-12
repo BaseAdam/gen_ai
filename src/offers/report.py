@@ -3,12 +3,12 @@ from offers.models import Offer
 
 
 def print_report(offers: list[Offer]) -> None:
-    print(f"Liczba ofert: {len(offers)}")
+    print(f"Number of offers: {len(offers)}")
     for skill, count in top_skills(offers):
         print(f"  {skill}: {count}")
     for city, city_offers in group_by_city(offers).items():
         avg = avg_salary(city_offers)
-        avg_str = f"{avg:.0f}" if avg is not None else "brak danych"
+        avg_str = f"{avg:.0f}" if avg is not None else "no data"
         print(f"{city}: {avg_str}")
     complete = [
         offer for offer in offers if offer.salary_min is not None and offer.salary_max is not None

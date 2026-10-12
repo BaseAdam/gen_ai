@@ -3,7 +3,7 @@ from offers.llm import create_client
 from offers.rag import answer_with_rag
 from offers.store import connect
 
-QUESTION = "W których ofertach firma zapewnia sprzęt do pracy zdalnej?"
+QUESTION = "Which offers provide equipment for remote work?"
 
 if __name__ == "__main__":
     settings = Settings()

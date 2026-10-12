@@ -23,7 +23,7 @@ from offers.store import Connection, connect, search_keywords, search_offers
 K = 5
 PAUSE_SECONDS = 5
 WITH_RERANK = "--rerank" in sys.argv
-VARIANTS = ["wektory", "bm25", "hybryda"] + (["rerank"] if WITH_RERANK else [])
+VARIANTS = ["vectors", "bm25", "hybrid"] + (["rerank"] if WITH_RERANK else [])
 
 
 def run_variants(
@@ -44,11 +44,11 @@ def run_variants(
         min_score=min_score,
     )
     rankings = {
-        "wektory": search_offers(
+        "vectors": search_offers(
             conn, vector, K, city=case.city, remote=case.remote, min_score=min_score
         ),
         "bm25": search_keywords(conn, case.question, K, city=case.city, remote=case.remote),
-        "hybryda": candidates[:K],
+        "hybrid": candidates[:K],
     }
     if WITH_RERANK:
         rankings["rerank"] = rerank(client, case.question, candidates, settings.gemini_model, K)
@@ -94,6 +94,6 @@ if __name__ == "__main__":
                 time.sleep(PAUSE_SECONDS)
 
     print()
-    print(header("średnio"))
+    print(header("average"))
     for label, scores in [("recall@5", recall), ("precision@5", precision), ("MRR", rr)]:
         print(row(label, [fmean(scores[name]) for name in VARIANTS]))

@@ -15,9 +15,9 @@ def vec(*head: float) -> list[float]:
 
 def save_offers(conn: Connection) -> None:
     offers = [
-        Offer(title="A", company="X", city="Warszawa"),
-        Offer(title="B", company="Y", city="Kraków"),
-        Offer(title="C", company="Z", city="Gdańsk"),
+        Offer(title="A", company="X", city="Warsaw"),
+        Offer(title="B", company="Y", city="Krakow"),
+        Offer(title="C", company="Z", city="Gdansk"),
     ]
     vectors = [[vec(0.0, 1.0)], [vec(1.0, 0.0)], [vec(1.0, 1.0)]]
     replace_offers(conn, offers, [["a"], ["b"], ["c"]], vectors)
@@ -50,50 +50,52 @@ class FakeRagClient:
 
 def test_build_prompt_numbers_offers_and_ends_with_question() -> None:
     results = [
-        ScoredOffer(offer=Offer(title="A", company="X", city="Warszawa"), score=0.9),
-        ScoredOffer(offer=Offer(title="B", company="Y", city="Kraków"), score=0.8),
+        ScoredOffer(offer=Offer(title="A", company="X", city="Warsaw"), score=0.9),
+        ScoredOffer(offer=Offer(title="B", company="Y", city="Krakow"), score=0.8),
     ]
 
-    prompt = build_prompt("Co wybrać?", results)
+    prompt = build_prompt("Best pick?", results)
 
-    assert prompt.startswith('OFERTY:\n[1] {"title":"A"')
+    assert prompt.startswith('OFFERS:\n[1] {"title":"A"')
     assert '\n\n[2] {"title":"B"' in prompt
-    assert prompt.endswith("\n\nPYTANIE: Co wybrać?")
+    assert prompt.endswith("\n\nQUESTION: Best pick?")
 
 
 def test_build_prompt_uses_matched_chunk_instead_of_full_description() -> None:
     offer = Offer(
         title="A",
         company="X",
-        city="Warszawa",
-        description="O firmie\nDługi opis firmy.\n\nOferujemy\nOwoce w biurze.",
+        city="Warsaw",
+        description="About the company\nLong company text.\n\nWhat we offer\nFruit in the office.",
     )
-    results = [ScoredOffer(offer=offer, score=0.9, chunk="A w X\nOferujemy\nOwoce w biurze.")]
+    results = [
+        ScoredOffer(offer=offer, score=0.9, chunk="A at X\nWhat we offer\nFruit in the office.")
+    ]
 
-    prompt = build_prompt("Co dają?", results)
+    prompt = build_prompt("What do they offer?", results)
 
-    assert "Fragment ogłoszenia:\nA w X\nOferujemy\nOwoce w biurze." in prompt
-    assert "Długi opis firmy." not in prompt
+    assert "Job ad fragment:\nA at X\nWhat we offer\nFruit in the office." in prompt
+    assert "Long company text." not in prompt
     assert '"description"' not in prompt
 
 
 def test_answer_with_rag_sends_retrieved_offers_to_model(conn: Connection) -> None:
     save_offers(conn)
-    client = FakeRagClient("Polecam [1].")
+    client = FakeRagClient("I recommend [1].")
 
-    result = answer_with_rag(client, conn, "Co wybrać?", "chat-model", "embed-model", top_k=2)
+    result = answer_with_rag(client, conn, "Best pick?", "chat-model", "embed-model", top_k=2)
 
-    assert result.answer == "Polecam [1]."
+    assert result.answer == "I recommend [1]."
     assert [item.offer.title for item in result.sources] == ["B", "C"]
 
     embed_call = client.models.embed_calls[0]
     assert embed_call["model"] == "embed-model"
-    assert embed_call["contents"] == ["Co wybrać?"]
+    assert embed_call["contents"] == ["Best pick?"]
     assert embed_call["config"].task_type == "RETRIEVAL_QUERY"
 
     generate_call = client.models.generate_calls[0]
     assert generate_call["model"] == "chat-model"
-    assert generate_call["contents"] == build_prompt("Co wybrać?", result.sources)
+    assert generate_call["contents"] == build_prompt("Best pick?", result.sources)
     assert '"title":"A"' not in generate_call["contents"]
     assert generate_call["config"].system_instruction == RAG_INSTRUCTION
     assert generate_call["config"].thinking_config.thinking_level == types.ThinkingLevel.LOW
@@ -101,10 +103,16 @@ def test_answer_with_rag_sends_retrieved_offers_to_model(conn: Connection) -> No
 
 def test_answer_with_rag_applies_filters(conn: Connection) -> None:
     save_offers(conn)
-    client = FakeRagClient("Polecam [1].")
+    client = FakeRagClient("I recommend [1].")
 
     result = answer_with_rag(
-        client, conn, "Co wybrać?", "chat-model", "embed-model", city="Gdańsk", remote=False
+        client,
+        conn,
+        "Best pick?",
+        "chat-model",
+        "embed-model",
+        city="Gdansk",
+        remote=False,
     )
 
     assert [item.offer.title for item in result.sources] == ["C"]
@@ -113,9 +121,9 @@ def test_answer_with_rag_applies_filters(conn: Connection) -> None:
 
 def test_answer_with_rag_skips_model_when_nothing_matches(conn: Connection) -> None:
     save_offers(conn)
-    client = FakeRagClient("Polecam [1].")
+    client = FakeRagClient("I recommend [1].")
 
-    result = answer_with_rag(client, conn, "Co wybrać?", "chat-model", "embed-model", city="Poznań")
+    result = answer_with_rag(client, conn, "Best pick?", "chat-model", "embed-model", city="Poznan")
 
     assert result.answer == NO_RESULTS_ANSWER
     assert result.sources == []
@@ -124,9 +132,9 @@ def test_answer_with_rag_skips_model_when_nothing_matches(conn: Connection) -> N
 
 def test_answer_with_rag_applies_min_score(conn: Connection) -> None:
     save_offers(conn)
-    client = FakeRagClient("Polecam [1].")
+    client = FakeRagClient("I recommend [1].")
 
-    result = answer_with_rag(client, conn, "Co wybrać?", "chat-model", "embed-model", min_score=0.8)
+    result = answer_with_rag(client, conn, "Best pick?", "chat-model", "embed-model", min_score=0.8)
 
     assert [item.offer.title for item in result.sources] == ["B"]
 
@@ -138,11 +146,11 @@ def relevance(*scores: int) -> str:
 
 def test_answer_with_rag_reranks_candidates(conn: Connection) -> None:
     save_offers(conn)
-    client = FakeRagClient("Polecam [1].")
+    client = FakeRagClient("I recommend [1].")
     client.models.relevance = relevance(3, 4, 9)
 
     result = answer_with_rag(
-        client, conn, "Co wybrać?", "chat-model", "embed-model", use_rerank=True
+        client, conn, "Best pick?", "chat-model", "embed-model", use_rerank=True
     )
 
     assert [item.offer.title for item in result.sources] == ["A"]
@@ -152,11 +160,11 @@ def test_answer_with_rag_reranks_candidates(conn: Connection) -> None:
 
 def test_answer_with_rag_skips_model_when_reranker_rejects_everything(conn: Connection) -> None:
     save_offers(conn)
-    client = FakeRagClient("Polecam [1].")
+    client = FakeRagClient("I recommend [1].")
     client.models.relevance = relevance(1, 2, 0)
 
     result = answer_with_rag(
-        client, conn, "Co wybrać?", "chat-model", "embed-model", use_rerank=True
+        client, conn, "Best pick?", "chat-model", "embed-model", use_rerank=True
     )
 
     assert result.answer == NO_RESULTS_ANSWER

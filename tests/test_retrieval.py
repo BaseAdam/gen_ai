@@ -11,7 +11,7 @@ def vec(*head: float) -> list[float]:
 
 
 def item(offer_id: int, title: str, chunk: str = "") -> ScoredOffer:
-    offer = Offer(title=title, company="X", city="Warszawa")
+    offer = Offer(title=title, company="X", city="Warsaw")
     return ScoredOffer(offer_id=offer_id, offer=offer, score=0.0, chunk=chunk)
 
 
@@ -35,11 +35,11 @@ def test_rrf_keeps_chunk_from_first_ranking() -> None:
 
 def save_offers(conn: Connection) -> None:
     offers = [
-        Offer(title="A", company="X", city="Warszawa"),
-        Offer(title="B", company="Y", city="Kraków"),
-        Offer(title="C", company="Z", city="Gdańsk"),
+        Offer(title="A", company="X", city="Warsaw"),
+        Offer(title="B", company="Y", city="Krakow"),
+        Offer(title="C", company="Z", city="Gdansk"),
     ]
-    contents = [["sprzęt"], ["kawa"], ["sprzęt sprzęt"]]
+    contents = [["equipment"], ["coffee"], ["equipment equipment"]]
     vectors = [[vec(0.0, 1.0)], [vec(1.0, 0.0)], [vec(1.0, 1.0)]]
     replace_offers(conn, offers, contents, vectors)
 
@@ -47,7 +47,7 @@ def save_offers(conn: Connection) -> None:
 def test_hybrid_search_combines_both_rankings(conn: Connection) -> None:
     save_offers(conn)
 
-    ranked = hybrid_search(conn, vec(1.0, 0.0), "sprzęt")
+    ranked = hybrid_search(conn, vec(1.0, 0.0), "equipment")
 
     assert [result.offer.title for result in ranked] == ["C", "A", "B"]
 
@@ -57,6 +57,6 @@ def test_hybrid_search_returns_nothing_when_semantic_search_rejects_question(
 ) -> None:
     save_offers(conn)
 
-    ranked = hybrid_search(conn, vec(0.0, 0.0, 1.0), "sprzęt", min_score=0.5)
+    ranked = hybrid_search(conn, vec(0.0, 0.0, 1.0), "equipment", min_score=0.5)
 
     assert ranked == []

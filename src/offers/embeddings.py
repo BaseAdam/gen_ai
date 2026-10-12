@@ -9,9 +9,9 @@ EMBEDDING_DIMENSIONS = 768
 
 
 def offer_to_text(offer: Offer) -> str:
-    mode = "zdalnie" if offer.remote else "stacjonarnie"
-    skills = ", ".join(offer.skills) or "brak danych"
-    return f"{offer.title} w {offer.company}, {offer.city}, {mode}. Wymagania: {skills}."
+    mode = "remote" if offer.remote else "on-site"
+    skills = ", ".join(offer.skills) or "not specified"
+    return f"{offer.title} at {offer.company}, {offer.city}, {mode}. Requirements: {skills}."
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:

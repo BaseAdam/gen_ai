@@ -12,16 +12,20 @@ def vec(*head: float) -> list[float]:
 @pytest.fixture
 def offers() -> list[Offer]:
     return [
-        Offer(title="A", company="X", city="Warszawa"),
-        Offer(title="B", company="Y", city="Kraków", remote=True, skills=["python"]),
-        Offer(title="C", company="Z", city="Gdańsk"),
+        Offer(title="A", company="X", city="Warsaw"),
+        Offer(title="B", company="Y", city="Krakow", remote=True, skills=["python"]),
+        Offer(title="C", company="Z", city="Gdansk"),
     ]
 
 
 CONTENTS = [["text a"], ["text b"], ["text c"]]
 VECTORS = [[vec(0.0, 1.0)], [vec(1.0, 0.0)], [vec(1.0, 1.0)]]
 
-KEYWORD_CONTENTS = [["kawa i biuro"], ["sprzęt oraz biuro oraz kawa", "sprzęt sprzęt"], ["sprzęt"]]
+KEYWORD_CONTENTS = [
+    ["coffee and office"],
+    ["equipment and office and coffee", "equipment equipment"],
+    ["equipment"],
+]
 KEYWORD_VECTORS = [[vec(1.0)], [vec(1.0), vec(1.0)], [vec(1.0)]]
 
 
@@ -59,7 +63,7 @@ def test_replace_offers_rejects_mismatched_lengths(conn: Connection, offers: lis
 def test_search_filters_by_city_ignoring_case(conn: Connection, offers: list[Offer]) -> None:
     replace_offers(conn, offers, CONTENTS, VECTORS)
 
-    ranked = search_offers(conn, vec(1.0, 0.0), city="WARSZAWA")
+    ranked = search_offers(conn, vec(1.0, 0.0), city="WARSAW")
 
     assert [item.offer.title for item in ranked] == ["A"]
 
@@ -77,7 +81,7 @@ def test_search_filters_by_remote(conn: Connection, offers: list[Offer]) -> None
 def test_search_filters_before_limit(conn: Connection, offers: list[Offer]) -> None:
     replace_offers(conn, offers, CONTENTS, VECTORS)
 
-    ranked = search_offers(conn, vec(1.0, 0.0), top_k=1, city="Gdańsk")
+    ranked = search_offers(conn, vec(1.0, 0.0), top_k=1, city="Gdansk")
 
     assert [item.offer.title for item in ranked] == ["C"]
 
@@ -117,27 +121,27 @@ def test_search_returns_each_offer_once_with_its_best_chunk(
 def test_search_keywords_ranks_offers_by_best_chunk(conn: Connection, offers: list[Offer]) -> None:
     replace_offers(conn, offers, KEYWORD_CONTENTS, KEYWORD_VECTORS)
 
-    ranked = search_keywords(conn, "sprzęt")
+    ranked = search_keywords(conn, "equipment")
 
     assert [(item.offer.title, item.chunk) for item in ranked] == [
-        ("B", "sprzęt sprzęt"),
-        ("C", "sprzęt"),
+        ("B", "equipment equipment"),
+        ("C", "equipment"),
     ]
 
 
 def test_search_keywords_applies_filters(conn: Connection, offers: list[Offer]) -> None:
     replace_offers(conn, offers, KEYWORD_CONTENTS, KEYWORD_VECTORS)
 
-    ranked = search_keywords(conn, "sprzęt", city="Kraków")
+    ranked = search_keywords(conn, "equipment", city="Krakow")
 
     assert [item.offer.title for item in ranked] == ["B"]
 
 
 def test_both_searches_return_the_same_offer_id(conn: Connection, offers: list[Offer]) -> None:
-    replace_offers(conn, offers, [["kawa"], ["sprzęt"], ["biuro"]], VECTORS)
+    replace_offers(conn, offers, [["coffee"], ["equipment"], ["office"]], VECTORS)
 
     [semantic] = search_offers(conn, vec(1.0, 0.0), top_k=1)
-    [keyword] = search_keywords(conn, "sprzęt")
+    [keyword] = search_keywords(conn, "equipment")
 
     assert semantic.offer.title == keyword.offer.title == "B"
     assert semantic.offer_id == keyword.offer_id != 0

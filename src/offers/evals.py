@@ -10,7 +10,7 @@ from offers.embeddings import embed_texts
 class EvalCase(BaseModel):
     id: str
     question: str
-    relevant: list[str] = Field(description="Tytuły ofert, które powinny wrócić")
+    relevant: list[str] = Field(description="Titles of the offers that should be returned")
     city: str | None = None
     remote: bool | None = None
 

@@ -3,7 +3,7 @@ from offers.config import Settings
 from offers.io import load_offers
 from offers.llm import create_client
 
-QUESTION = "Gdzie zarabia się lepiej: w Warszawie czy w Krakowie?"
+QUESTION = "Where are salaries better: in Warsaw or in Krakow?"
 
 if __name__ == "__main__":
     settings = Settings()

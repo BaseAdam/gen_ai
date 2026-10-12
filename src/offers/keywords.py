@@ -7,11 +7,11 @@ MIN_WORD_LENGTH = 3
 
 STOP_WORDS = frozenset(
     """
-    gdzie kiedy jak jaka jaki jakie jakiej jakich
-    która który które której których którym którą
-    czy jest się dla oraz lub albo ale bez przez przy pod nad
-    tak nie już też także ten tej tym tego tych
-    być będzie będziesz mam mamy masz mnie mój moja
+    the and for are was were been being has have had does did can could should would will
+    what which who whom whose where when why how
+    this that these those there here their they them you your our its
+    with from into onto about over under than then also just
+    not but any all some each other such only very too
     """.split()
 )
 

@@ -4,7 +4,7 @@ from offers.llm import create_client
 from offers.retrieval import hybrid_search
 from offers.store import connect, search_keywords, search_offers
 
-QUESTION = "W których ofertach firma zapewnia sprzęt do pracy zdalnej?"
+QUESTION = "Which offers provide equipment for remote work?"
 
 if __name__ == "__main__":
     settings = Settings()
@@ -14,9 +14,9 @@ if __name__ == "__main__":
 
     with connect(settings.database_url) as conn:
         rankings = {
-            "wektory": search_offers(conn, vector, top_k=5),
-            "słowa": search_keywords(conn, QUESTION, top_k=5),
-            "hybryda": hybrid_search(conn, vector, QUESTION, top_k=5),
+            "vectors": search_offers(conn, vector, top_k=5),
+            "keywords": search_keywords(conn, QUESTION, top_k=5),
+            "hybrid": hybrid_search(conn, vector, QUESTION, top_k=5),
         }
 
     for name, ranking in rankings.items():

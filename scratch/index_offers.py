@@ -17,4 +17,4 @@ if __name__ == "__main__":
         reset_schema(conn)
         replace_offers(conn, offers, chunks, vectors)
 
-    print(f"Zapisano {len(offers)} ofert i {sum(len(group) for group in chunks)} fragmentów")
+    print(f"Saved {len(offers)} offers and {sum(len(group) for group in chunks)} chunks")

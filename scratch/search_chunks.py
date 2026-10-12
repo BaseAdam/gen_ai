@@ -3,7 +3,7 @@ from offers.embeddings import embed_texts
 from offers.llm import create_client
 from offers.store import connect, search_offers
 
-QUESTION = "Gdzie będę projektować zapytania do baz danych?"
+QUESTION = "Where will I design database queries?"
 
 if __name__ == "__main__":
     settings = Settings()

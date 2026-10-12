@@ -8,26 +8,26 @@ from offers.retrieval import hybrid_search
 from offers.store import Connection
 
 RAG_INSTRUCTION = (
-    "Jesteś doradcą kariery. Odpowiadasz wyłącznie na podstawie ofert z sekcji OFERTY. "
-    "Każda oferta to dane w JSON i jeden fragment jej ogłoszenia, najlepiej pasujący do pytania. "
-    "Gdy piszesz o ofercie, podaj jej numer w nawiasie kwadratowym, np. [2]. "
-    "Jeśli oferty nie pozwalają odpowiedzieć na pytanie, napisz to wprost i niczego nie zmyślaj."
+    "You are a career advisor. Answer only based on the offers in the OFFERS section. "
+    "Each offer is JSON data plus the one fragment of its job ad that best matches the question. "
+    "When you mention an offer, give its number in square brackets, e.g. [2]. "
+    "If the offers do not answer the question, say so plainly and do not make anything up."
 )
 
-NO_RESULTS_ANSWER = "Nie znalazłem ofert spełniających te warunki."
+NO_RESULTS_ANSWER = "I couldn't find any offers matching these criteria."
 
 RERANK_CANDIDATES = 10
 
 
 def format_source(number: int, item: ScoredOffer) -> str:
     data = item.offer.model_dump_json(exclude={"description"})
-    return f"[{number}] {data}\nFragment ogłoszenia:\n{item.chunk}"
+    return f"[{number}] {data}\nJob ad fragment:\n{item.chunk}"
 
 
 def build_prompt(question: str, results: list[ScoredOffer]) -> str:
     blocks = [format_source(number, item) for number, item in enumerate(results, start=1)]
     context = "\n\n".join(blocks)
-    return f"OFERTY:\n{context}\n\nPYTANIE: {question}"
+    return f"OFFERS:\n{context}\n\nQUESTION: {question}"
 
 
 def answer_with_rag(
@@ -61,4 +61,4 @@ def answer_with_rag(
     response = client.models.generate_content(
         model=chat_model, contents=build_prompt(question, results), config=config
     )
-    return RagAnswer(answer=response.text or "Brak odpowiedzi", sources=results)
+    return RagAnswer(answer=response.text or "No answer", sources=results)

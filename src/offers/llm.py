@@ -11,7 +11,7 @@ from offers.models import Offer, OfferSummary
 from offers.retry import with_retry
 
 SYSTEM_INSTRUCTION = (
-    "role: it recruiter, task: summarize offer, format: 2 sentences, language: polish, "
+    "role: it recruiter, task: summarize offer, format: 2 sentences, language: english, "
     "content: (company, salary range, important skills)"
 )
 
@@ -38,7 +38,7 @@ def _convert_response_to_summary(response: GenerateContentResponse) -> OfferSumm
         output_tokens = usage.candidates_token_count or 0
 
     return OfferSummary(
-        text=response.text or "Brak podsumowania",
+        text=response.text or "No summary",
         input_tokens=input_tokens,
         output_tokens=output_tokens,
     )
@@ -103,8 +103,8 @@ async def summarize_all(
 
 
 TIPS_INSTRUCTION = (
-    "Na podstawie oferty pracy wypisz 5 krótkich wskazówek, jak przygotować się "
-    "do rozmowy rekrutacyjnej na to stanowisko. Odpowiadaj po polsku."
+    "Based on the job offer, list 5 short tips on how to prepare "
+    "for a job interview for this position. Answer in English."
 )
 
 

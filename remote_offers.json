@@ -2,7 +2,7 @@
   {
     "title": "Junior Python Developer",
     "company": "Acme",
-    "city": "Warszawa",
+    "city": "Warsaw",
     "salary_min": 8000,
     "salary_max": 12000,
     "remote": true,
@@ -15,7 +15,7 @@
   {
     "title": "AI Engineer",
     "company": "Lumen AI",
-    "city": "Warszawa",
+    "city": "Warsaw",
     "salary_min": 15000,
     "salary_max": 22000,
     "remote": true,
@@ -29,7 +29,7 @@
   {
     "title": "Fullstack Developer",
     "company": "Codewave",
-    "city": "Warszawa",
+    "city": "Warsaw",
     "salary_min": 10000,
     "salary_max": 16000,
     "remote": true,
@@ -42,7 +42,7 @@
   {
     "title": "Junior Backend Developer",
     "company": "Skyline Software",
-    "city": "Poznań",
+    "city": "Poznan",
     "salary_min": 7000,
     "salary_max": 10000,
     "remote": true,
@@ -51,7 +51,7 @@
   {
     "title": "Data Engineer",
     "company": "Vistula Analytics",
-    "city": "Wrocław",
+    "city": "Wroclaw",
     "salary_min": 13000,
     "salary_max": 19000,
     "remote": true,
@@ -65,7 +65,7 @@
   {
     "title": "LLM Engineer",
     "company": "Lumen AI",
-    "city": "Kraków",
+    "city": "Krakow",
     "salary_min": 18000,
     "salary_max": 26000,
     "remote": true,
@@ -79,7 +79,7 @@
   {
     "title": "Junior AI Engineer",
     "company": "Skyline Software",
-    "city": "Poznań",
+    "city": "Poznan",
     "salary_min": null,
     "salary_max": 11000,
     "remote": true,
@@ -91,7 +91,7 @@
   {
     "title": "Python Backend Intern",
     "company": "DeepGdansk",
-    "city": "Gdańsk",
+    "city": "Gdansk",
     "salary_min": 4000,
     "salary_max": 6000,
     "remote": true,
@@ -103,7 +103,7 @@
   {
     "title": "Research Engineer",
     "company": "Lumen AI",
-    "city": "Warszawa",
+    "city": "Warsaw",
     "salary_min": 20000,
     "salary_max": 30000,
     "remote": true,
@@ -117,7 +117,7 @@
   {
     "title": "Platform Engineer",
     "company": "Neptune Systems",
-    "city": "Kraków",
+    "city": "Krakow",
     "salary_min": 13000,
     "salary_max": 19000,
     "remote": true,

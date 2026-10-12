@@ -1,7 +1,7 @@
 [
   {
-    "id": "sprzet",
-    "question": "Która firma zapewnia sprzęt do pracy?",
+    "id": "equipment",
+    "question": "Which company provides equipment for work?",
     "relevant": [
       "Junior Python Developer",
       "Backend Engineer",
@@ -10,7 +10,7 @@
   },
   {
     "id": "laptop",
-    "question": "Gdzie pracodawca da mi laptopa?",
+    "question": "Where will the employer give me a laptop?",
     "relevant": [
       "Junior Python Developer",
       "Backend Engineer",
@@ -18,8 +18,8 @@
     ]
   },
   {
-    "id": "budzet-szkoleniowy",
-    "question": "Gdzie dostanę budżet szkoleniowy?",
+    "id": "training-budget",
+    "question": "Where will I get a training budget?",
     "relevant": [
       "Machine Learning Engineer",
       "Junior AI Engineer",
@@ -27,37 +27,37 @@
     ]
   },
   {
-    "id": "elastyczne-godziny",
-    "question": "W której pracy mam elastyczne godziny?",
+    "id": "flexible-hours",
+    "question": "Which job has flexible working hours?",
     "relevant": [
       "Junior Backend Developer",
       "Platform Engineer"
     ]
   },
   {
-    "id": "umowa-o-prace",
-    "question": "Która oferta daje umowę o pracę?",
+    "id": "employment-contract",
+    "question": "Which offer comes with an employment contract?",
     "relevant": [
       "Data Analyst"
     ]
   },
   {
-    "id": "staz",
-    "question": "Szukam płatnego stażu, który pogodzę ze studiami",
+    "id": "internship",
+    "question": "I'm looking for a paid internship I can combine with my studies",
     "relevant": [
       "Python Backend Intern"
     ]
   },
   {
     "id": "airflow",
-    "question": "Praca przy orkiestracji zadań w Airflow",
+    "question": "Job orchestrating tasks in Airflow",
     "relevant": [
       "Data Engineer"
     ]
   },
   {
     "id": "rag",
-    "question": "Gdzie będę budować systemy RAG?",
+    "question": "Where will I build RAG systems?",
     "relevant": [
       "LLM Engineer",
       "Research Engineer"
@@ -65,7 +65,7 @@
   },
   {
     "id": "kubernetes",
-    "question": "Które oferty wymagają Kubernetesa?",
+    "question": "Which offers require Kubernetes?",
     "relevant": [
       "DevOps Engineer",
       "Platform Engineer"
@@ -73,7 +73,7 @@
   },
   {
     "id": "pytorch",
-    "question": "Chcę budować modele w PyTorch",
+    "question": "I want to build models in PyTorch",
     "relevant": [
       "Machine Learning Engineer",
       "Research Engineer"
@@ -81,14 +81,14 @@
   },
   {
     "id": "excel",
-    "question": "Gdzie potrzebna jest znajomość Excela?",
+    "question": "Where is Excel knowledge needed?",
     "relevant": [
       "Data Analyst"
     ]
   },
   {
-    "id": "mentor",
-    "question": "Gdzie junior dostanie wsparcie mentora?",
+    "id": "mentoring",
+    "question": "Where will a junior get support from a mentor?",
     "relevant": [
       "Junior Backend Developer",
       "Junior AI Engineer",
@@ -97,8 +97,8 @@
     ]
   },
   {
-    "id": "angielski",
-    "question": "Gdzie wymagają znajomości angielskiego?",
+    "id": "english",
+    "question": "Where is English required?",
     "relevant": [
       "Junior Backend Developer",
       "Junior AI Engineer"
@@ -106,37 +106,37 @@
   },
   {
     "id": "django",
-    "question": "Praca z Django",
+    "question": "Working with Django",
     "relevant": [
       "Python Developer"
     ]
   },
   {
     "id": "react",
-    "question": "Szukam pracy z Reactem",
+    "question": "I'm looking for a job with React",
     "relevant": [
       "Fullstack Developer",
       "Junior Fullstack Developer"
     ]
   },
   {
-    "id": "integracja",
-    "question": "Która firma organizuje spotkania integracyjne?",
+    "id": "team-building",
+    "question": "Which company organizes team-building events?",
     "relevant": [
       "Software Engineer"
     ]
   },
   {
-    "id": "chmura",
-    "question": "Utrzymanie infrastruktury chmurowej",
+    "id": "cloud",
+    "question": "Maintaining cloud infrastructure",
     "relevant": [
       "DevOps Engineer"
     ]
   },
   {
     "id": "krakow-python-sql",
-    "question": "Praca z Pythonem i SQL",
-    "city": "Kraków",
+    "question": "Working with Python and SQL",
+    "city": "Krakow",
     "relevant": [
       "Backend Engineer",
       "Software Engineer",
@@ -144,8 +144,8 @@
     ]
   },
   {
-    "id": "junior-zdalnie",
-    "question": "Oferta dla juniora",
+    "id": "junior-remote",
+    "question": "An offer for a junior",
     "remote": true,
     "relevant": [
       "Junior Python Developer",
@@ -155,18 +155,18 @@
     ]
   },
   {
-    "id": "kierowca",
-    "question": "Szukam pracy jako kierowca ciężarówki",
+    "id": "truck-driver",
+    "question": "I'm looking for a job as a truck driver",
     "relevant": []
   },
   {
     "id": "pierogi",
-    "question": "Jak zrobić pierogi?",
+    "question": "How do I make pierogi?",
     "relevant": []
   },
   {
-    "id": "francja",
-    "question": "Jaka jest stolica Francji?",
+    "id": "capital-of-france",
+    "question": "What is the capital of France?",
     "relevant": []
   }
 ]

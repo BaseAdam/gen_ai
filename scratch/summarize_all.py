@@ -21,7 +21,7 @@ async def main() -> None:
         print(f"  {summary.text}\n")
 
     total_tokens = sum(s.input_tokens + s.output_tokens for s in summaries)
-    print(f"{len(summaries)} ofert w {elapsed:.1f} s, tokeny łącznie: {total_tokens}")
+    print(f"{len(summaries)} offers in {elapsed:.1f} s, total tokens: {total_tokens}")
 
 
 if __name__ == "__main__":

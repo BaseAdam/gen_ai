@@ -8,9 +8,9 @@ from offers.llm import create_client
 EMBEDDING_MODEL = "gemini-embedding-001"
 
 TEXTS = [
-    "Szukamy programisty Python do pracy z FastAPI",
-    "Poszukujemy backend developera znającego Pythona i REST API",
-    "Zatrudnimy kucharza do restauracji włoskiej",
+    "We are hiring a Python developer to work with FastAPI",
+    "Looking for a backend developer who knows Python and REST APIs",
+    "Hiring a cook for an Italian restaurant",
 ]
 
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     vectors = [embedding.values or [] for embedding in response.embeddings or []]
 
-    print(f"{len(vectors)} wektory, każdy ma {len(vectors[0])} liczb")
-    print("początek pierwszego:", vectors[0][:5])
+    print(f"{len(vectors)} vectors, each with {len(vectors[0])} numbers")
+    print("start of the first one:", vectors[0][:5])
     print(f"python vs backend: {cosine_similarity(vectors[0], vectors[1]):.3f}")
-    print(f"python vs kucharz: {cosine_similarity(vectors[0], vectors[2]):.3f}")
+    print(f"python vs cook: {cosine_similarity(vectors[0], vectors[2]):.3f}")

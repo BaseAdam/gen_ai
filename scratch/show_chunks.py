@@ -9,5 +9,5 @@ if __name__ == "__main__":
         print("-" * 40)
 
     counts = [len(chunk_offer(offer)) for offer in offers]
-    print("fragmentów na ofertę:", counts)
-    print("razem:", sum(counts))
+    print("chunks per offer:", counts)
+    print("total:", sum(counts))

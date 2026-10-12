@@ -4,12 +4,12 @@ from offers.llm import create_client
 from offers.store import connect, search_offers
 
 QUESTIONS = [
-    "Szukam pracy jako programista Python",
-    "Oferty dla frontend developera z Reactem",
-    "Praca zdalna przy machine learningu",
-    "Praca dla kierowcy ciężarówki",
-    "Przepis na pierogi ukraińskie",
-    "Jaka jest stolica Francji?",
+    "I'm looking for a job as a Python developer",
+    "Offers for a frontend developer with React",
+    "Remote machine learning job",
+    "A job for a truck driver",
+    "A recipe for Ukrainian pierogi",
+    "What is the capital of France?",
 ]
 
 if __name__ == "__main__":

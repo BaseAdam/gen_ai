@@ -37,9 +37,9 @@ class ScriptedClient:
 @pytest.fixture
 def offers() -> list[Offer]:
     return [
-        Offer(title="A", company="X", city="Warszawa", salary_min=10000, salary_max=20000),
-        Offer(title="B", company="Y", city="Warszawa", salary_min=8000, salary_max=12000),
-        Offer(title="C", company="Z", city="Kraków", remote=True),
+        Offer(title="A", company="X", city="Warsaw", salary_min=10000, salary_max=20000),
+        Offer(title="B", company="Y", city="Warsaw", salary_min=8000, salary_max=12000),
+        Offer(title="C", company="Z", city="Krakow", remote=True),
     ]
 
 
@@ -49,56 +49,56 @@ def tool_result(client: ScriptedClient) -> dict[str, Any]:
 
 
 def test_answers_directly_without_tools(offers: list[Offer]) -> None:
-    client = ScriptedClient([text_response("Cześć!")])
+    client = ScriptedClient([text_response("Hi!")])
 
-    answer = answer_question(client, "hej", offers, "test-model")
+    answer = answer_question(client, "hey", offers, "test-model")
 
-    assert answer == "Cześć!"
+    assert answer == "Hi!"
     assert len(client.models.sent) == 1
 
 
 def test_runs_tool_and_returns_final_answer(offers: list[Offer]) -> None:
     client = ScriptedClient(
-        [call_response("search_offers", city="Warszawa"), text_response("Są 2 oferty.")]
+        [call_response("search_offers", city="Warsaw"), text_response("There are 2 offers.")]
     )
 
-    answer = answer_question(client, "oferty w Warszawie?", offers, "test-model")
+    answer = answer_question(client, "offers in Warsaw?", offers, "test-model")
 
-    assert answer == "Są 2 oferty."
+    assert answer == "There are 2 offers."
     assert len(client.models.sent) == 2
     assert [turn.role for turn in client.models.sent[1]] == ["user", "model", "user"]
     assert [o["title"] for o in tool_result(client)["result"]] == ["A", "B"]
 
 
 def test_unknown_tool_goes_back_to_model_as_error(offers: list[Offer]) -> None:
-    client = ScriptedClient([call_response("delete_everything"), text_response("Nie umiem.")])
+    client = ScriptedClient([call_response("delete_everything"), text_response("I can't do that.")])
 
-    answer = answer_question(client, "usuń wszystko", offers, "test-model")
+    answer = answer_question(client, "delete everything", offers, "test-model")
 
-    assert answer == "Nie umiem."
-    assert "Nieznane narzędzie" in tool_result(client)["error"]
+    assert answer == "I can't do that."
+    assert "Unknown tool" in tool_result(client)["error"]
 
 
 def test_invalid_args_go_back_to_model_as_error(offers: list[Offer]) -> None:
     client = ScriptedClient(
-        [call_response("search_offers", remote="może"), text_response("Doprecyzuj.")]
+        [call_response("search_offers", remote="maybe"), text_response("Please clarify.")]
     )
 
-    answer_question(client, "zdalne?", offers, "test-model")
+    answer_question(client, "remote?", offers, "test-model")
 
-    assert "Błędne argumenty" in tool_result(client)["error"]
+    assert "Invalid arguments" in tool_result(client)["error"]
 
 
 def test_stops_after_max_steps(offers: list[Offer]) -> None:
     client = ScriptedClient([call_response("search_offers") for _ in range(10)])
 
     with pytest.raises(RuntimeError):
-        answer_question(client, "pętla", offers, "test-model", max_steps=3)
+        answer_question(client, "loop", offers, "test-model", max_steps=3)
 
     assert len(client.models.sent) == 3
 
 
 def test_salary_stats_tool(offers: list[Offer]) -> None:
-    result = run_tool("salary_stats", {"city": "Warszawa"}, offers)
+    result = run_tool("salary_stats", {"city": "Warsaw"}, offers)
 
     assert result == {"result": {"offers_count": 2, "average": 12500.0, "min": 8000, "max": 20000}}

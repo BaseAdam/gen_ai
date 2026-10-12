@@ -12,13 +12,13 @@ SHOWN = 10
 
 def section(item: ScoredOffer) -> str:
     lines = item.chunk.split("\n")
-    return lines[1] if len(lines) > 1 else "(nagłówek)"
+    return lines[1] if len(lines) > 1 else "(header)"
 
 
 def show(label: str, ranking: list[ScoredOffer], relevant: list[str]) -> None:
     print(f"  {label}")
     if not ranking:
-        print("     (pusto)")
+        print("     (empty)")
     for rank, item in enumerate(ranking, start=1):
         title = item.offer.title
         if rank <= SHOWN or title in relevant:
@@ -59,7 +59,7 @@ if __name__ == "__main__":
             )
 
             print(f"\n{case.id}: {case.question}")
-            print(f"poprawne: {', '.join(case.relevant)}")
-            show("wektory", semantic, case.relevant)
+            print(f"relevant: {', '.join(case.relevant)}")
+            show("vectors", semantic, case.relevant)
             show("bm25", keyword, case.relevant)
-            show("fuzja RRF", fused, case.relevant)
+            show("RRF fusion", fused, case.relevant)

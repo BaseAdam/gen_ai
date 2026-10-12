@@ -2,7 +2,7 @@ from offers.chunking import chunk_offer
 from offers.io import load_offers
 from offers.keywords import bm25_scores
 
-QUESTION = "W których ofertach firma zapewnia sprzęt do pracy zdalnej?"
+QUESTION = "Which offers provide equipment for remote work?"
 
 if __name__ == "__main__":
     offers = load_offers("offers.json")

@@ -6,8 +6,8 @@ from offers.retrieval import hybrid_search
 from offers.store import connect
 
 QUESTIONS = [
-    "W których ofertach firma zapewnia sprzęt do pracy zdalnej?",
-    "Praca dla kierowcy ciężarówki",
+    "Which offers provide equipment for remote work?",
+    "A job for a truck driver",
 ]
 
 if __name__ == "__main__":
@@ -24,9 +24,9 @@ if __name__ == "__main__":
             reranked = rerank(client, question, candidates, settings.gemini_model)
 
             print(question)
-            print("  przed:", ", ".join(item.offer.company for item in candidates[:5]))
+            print("  before:", ", ".join(item.offer.company for item in candidates[:5]))
             for item in reranked:
                 print(f"  {item.score:>2}  {item.offer.title} @ {item.offer.company}")
             if not reranked:
-                print("  (brak trafnych ofert)")
+                print("  (no relevant offers)")
             print()

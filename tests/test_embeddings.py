@@ -14,15 +14,15 @@ from offers.models import Offer
 
 
 def test_offer_to_text_describes_offer() -> None:
-    offer = Offer(title="Dev", company="Acme", city="Gdańsk", remote=True, skills=["Python", "SQL"])
+    offer = Offer(title="Dev", company="Acme", city="Gdansk", remote=True, skills=["Python", "SQL"])
 
-    assert offer_to_text(offer) == "Dev w Acme, Gdańsk, zdalnie. Wymagania: python, sql."
+    assert offer_to_text(offer) == "Dev at Acme, Gdansk, remote. Requirements: python, sql."
 
 
 def test_offer_to_text_without_skills() -> None:
-    offer = Offer(title="Dev", company="Acme", city="Gdańsk")
+    offer = Offer(title="Dev", company="Acme", city="Gdansk")
 
-    assert offer_to_text(offer) == "Dev w Acme, Gdańsk, stacjonarnie. Wymagania: brak danych."
+    assert offer_to_text(offer) == "Dev at Acme, Gdansk, on-site. Requirements: not specified."
 
 
 @pytest.mark.parametrize(
@@ -83,9 +83,9 @@ def test_embed_texts_rejects_incomplete_response(vectors: list[list[float] | Non
 @pytest.fixture
 def offers() -> list[Offer]:
     return [
-        Offer(title="A", company="X", city="Warszawa"),
-        Offer(title="B", company="Y", city="Kraków"),
-        Offer(title="C", company="Z", city="Gdańsk"),
+        Offer(title="A", company="X", city="Warsaw"),
+        Offer(title="B", company="Y", city="Krakow"),
+        Offer(title="C", company="Z", city="Gdansk"),
     ]
 
 

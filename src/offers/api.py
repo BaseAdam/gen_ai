@@ -24,17 +24,17 @@ app = FastAPI(title="Offers API")
 
 @app.exception_handler(httpx.TimeoutException)
 def handle_timeout(request: Request, exc: httpx.TimeoutException) -> JSONResponse:
-    return JSONResponse(status_code=504, content={"detail": "Model nie odpowiedział na czas"})
+    return JSONResponse(status_code=504, content={"detail": "The model did not respond in time"})
 
 
 @app.exception_handler(errors.APIError)
 def handle_api_error(request: Request, exc: errors.APIError) -> JSONResponse:
-    return JSONResponse(status_code=502, content={"detail": "Błąd usługi modelu"})
+    return JSONResponse(status_code=502, content={"detail": "Model service error"})
 
 
 @app.exception_handler(psycopg.OperationalError)
 def handle_database_error(request: Request, exc: psycopg.OperationalError) -> JSONResponse:
-    return JSONResponse(status_code=503, content={"detail": "Baza danych jest niedostępna"})
+    return JSONResponse(status_code=503, content={"detail": "Database is unavailable"})
 
 
 @lru_cache
@@ -111,7 +111,7 @@ def offer_tips(
     index: int, client: ClientDep, settings: SettingsDep, offers: OffersDep
 ) -> StreamingResponse:
     if not 0 <= index < len(offers):
-        raise HTTPException(status_code=404, detail="Nie ma takiej oferty")
+        raise HTTPException(status_code=404, detail="Offer not found")
     stream = stream_interview_tips(client, offers[index], settings.gemini_model)
     return StreamingResponse(stream, media_type="text/plain; charset=utf-8")
 

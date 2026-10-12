@@ -9,11 +9,12 @@ from offers.llm import create_client
 OFFERS_PATH = "offers.json"
 
 INSTRUCTION = (
-    "Napisz realistyczne ogłoszenie o pracę po polsku na podstawie danych w JSON. "
-    "Użyj dokładnie czterech sekcji w tej kolejności: O firmie, Obowiązki, Wymagania, Oferujemy. "
-    "Każda sekcja zaczyna się od nagłówka w osobnej linii i ma 2-4 zdania zwykłym tekstem. "
-    "Sekcje oddziel pustą linią. Nie używaj list ani markdownu. "
-    "Nie zmieniaj faktów z JSON-a: firmy, miasta, technologii, widełek i trybu pracy."
+    "Write a realistic job ad in English based on the JSON data. "
+    "Use exactly four sections in this order: About the company, Responsibilities, "
+    "Requirements, What we offer. Each section starts with its heading on a separate line "
+    "and has 2-4 sentences of plain text. Separate sections with a blank line. "
+    "Do not use lists or markdown. Do not change the facts from the JSON: "
+    "company, city, technologies, salary range and work mode."
 )
 
 

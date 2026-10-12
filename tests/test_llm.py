@@ -75,7 +75,7 @@ def offer() -> Offer:
     return Offer(
         title="AI Engineer",
         company="Lumen AI",
-        city="Warszawa",
+        city="Warsaw",
         salary_min=15000,
         salary_max=22000,
         skills=["python", "openai"],
@@ -83,19 +83,19 @@ def offer() -> Offer:
 
 
 def test_summary_maps_text_and_tokens(offer: Offer) -> None:
-    client = FakeClient(make_response("Krótkie podsumowanie.", 80, 20))
+    client = FakeClient(make_response("Short summary.", 80, 20))
 
     summary = summarize_offer(client, offer, "test-model")
 
-    assert summary == OfferSummary(text="Krótkie podsumowanie.", input_tokens=80, output_tokens=20)
+    assert summary == OfferSummary(text="Short summary.", input_tokens=80, output_tokens=20)
 
 
 def test_summary_without_metadata(offer: Offer) -> None:
-    client = FakeClient(make_response("Testowa odpowiedz"))
+    client = FakeClient(make_response("Test answer"))
 
     summary = summarize_offer(client, offer, "test-model")
 
-    assert summary == OfferSummary(text="Testowa odpowiedz", input_tokens=0, output_tokens=0)
+    assert summary == OfferSummary(text="Test answer", input_tokens=0, output_tokens=0)
 
 
 def test_empty_response(offer: Offer) -> None:
@@ -103,11 +103,11 @@ def test_empty_response(offer: Offer) -> None:
 
     summary = summarize_offer(client, offer, "test-model")
 
-    assert summary == OfferSummary(text="Brak podsumowania", input_tokens=0, output_tokens=0)
+    assert summary == OfferSummary(text="No summary", input_tokens=0, output_tokens=0)
 
 
 def test_summarize_all_respects_limit_and_order() -> None:
-    offers = [Offer(title=f"Oferta {i}", company="Acme", city="Warszawa") for i in range(10)]
+    offers = [Offer(title=f"Offer {i}", company="Acme", city="Warsaw") for i in range(10)]
     client = FakeAsyncClient()
 
     summaries = asyncio.run(summarize_all(client, offers, "test-model", max_concurrency=3))
@@ -117,7 +117,7 @@ def test_summarize_all_respects_limit_and_order() -> None:
 
 
 def test_sends_offer_json_and_instruction(offer: Offer) -> None:
-    client = FakeClient(make_response("Odpowiedź"))
+    client = FakeClient(make_response("Answer"))
 
     summarize_offer(client, offer, "test-model")
 
@@ -133,7 +133,7 @@ def test_extraction_returns_validated_offer() -> None:
         {
             "title": "Mid Python Developer",
             "company": "BrightLeaf",
-            "city": "Wrocław",
+            "city": "Wroclaw",
             "salary_min": 16000,
             "salary_max": 21000,
             "remote": False,
@@ -143,7 +143,7 @@ def test_extraction_returns_validated_offer() -> None:
     )
     client = FakeClient(make_response(model_output))
 
-    offer = convert_offer_text_to_structure(client, "surowe ogłoszenie", "test-model")
+    offer = convert_offer_text_to_structure(client, "raw job ad", "test-model")
 
     assert offer.salary_min == 16000
     assert offer.skills == ["python", "fastapi"]
@@ -155,7 +155,7 @@ def test_salary_range_inverted() -> None:
         {
             "title": "Mid Python Developer",
             "company": "BrightLeaf",
-            "city": "Wrocław",
+            "city": "Wroclaw",
             "salary_min": 36000,
             "salary_max": 21000,
             "remote": False,
@@ -166,7 +166,7 @@ def test_salary_range_inverted() -> None:
 
     client = FakeClient(make_response(model_output))
     with pytest.raises(ValidationError):
-        convert_offer_text_to_structure(client, "surowe ogłoszenie", "test-model")
+        convert_offer_text_to_structure(client, "raw job ad", "test-model")
 
 
 def test_empty_response_on_extraction() -> None:
@@ -179,12 +179,12 @@ def test_empty_response_on_extraction() -> None:
 def test_extraction_sends_raw_text_and_schema() -> None:
     client = FakeClient(make_response('{"title": "Dev", "company": "X", "city": "Y"}'))
 
-    convert_offer_text_to_structure(client, "Odpowiedź", "test-model")
+    convert_offer_text_to_structure(client, "Answer", "test-model")
 
     assert len(client.models.calls) == 1
     call = client.models.calls[0]
     assert call["model"] == "test-model"
-    assert call["contents"] == "Odpowiedź"
+    assert call["contents"] == "Answer"
     assert call["config"].response_schema is Offer
     assert call["config"].response_mime_type == "application/json"
 
@@ -203,9 +203,9 @@ class FakeStreamClient:
 
 
 def test_stream_yields_text_pieces_and_skips_empty(offer: Offer) -> None:
-    chunks = [make_response("1. Powtórz "), types.GenerateContentResponse(), make_response("SQL.")]
+    chunks = [make_response("1. Review "), types.GenerateContentResponse(), make_response("SQL.")]
     client = FakeStreamClient(chunks)
 
     pieces = list(stream_interview_tips(client, offer, "test-model"))
 
-    assert pieces == ["1. Powtórz ", "SQL."]
+    assert pieces == ["1. Review ", "SQL."]

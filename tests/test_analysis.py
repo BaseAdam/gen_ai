@@ -10,7 +10,7 @@ def warsaw_remote() -> Offer:
     return Offer(
         title="AI Engineer",
         company="Lumen AI",
-        city="Warszawa",
+        city="Warsaw",
         salary_min=15000,
         salary_max=22000,
         remote=True,
@@ -23,7 +23,7 @@ def krakow_onsite() -> Offer:
     return Offer(
         title="Backend Engineer",
         company="Neptune",
-        city="Kraków",
+        city="Krakow",
         salary_min=12000,
         salary_max=18000,
         remote=False,
@@ -36,7 +36,7 @@ def no_salary() -> Offer:
     return Offer(
         title="Data Analyst",
         company="Vistula",
-        city="Wrocław",
+        city="Wroclaw",
         remote=False,
         skills=["sql", "excel"],
     )
@@ -47,7 +47,7 @@ def warsaw_remote_junior() -> Offer:
     return Offer(
         title="Junior Python Developer",
         company="Acme",
-        city="Warszawa",
+        city="Warsaw",
         salary_min=8000,
         salary_max=12000,
         remote=True,
@@ -87,9 +87,9 @@ def test_filter_offers_skills(all_offers, skill_filter, expected_count):
 @pytest.mark.parametrize(
     "city_filter,expected_count",
     [
-        ("Warszawa", 2),
-        ("warszawa", 2),
-        ("WARSZAWA", 2),
+        ("Warsaw", 2),
+        ("warsaw", 2),
+        ("WARSAW", 2),
     ],
 )
 def test_filter_offers_city(all_offers, city_filter, expected_count):
@@ -101,7 +101,7 @@ def test_rejects_inverted_salary():
         Offer(
             title="Junior Python Developer",
             company="Acme",
-            city="Warszawa",
+            city="Warsaw",
             salary_min=80000,
             salary_max=12000,
             remote=True,
@@ -113,7 +113,7 @@ def test_check_lowercase():
     sample = Offer(
         title="Junior Python Developer",
         company="Acme",
-        city="Warszawa",
+        city="Warsaw",
         salary_min=6000,
         salary_max=12000,
         remote=True,

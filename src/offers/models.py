@@ -10,11 +10,11 @@ class Offer(BaseModel):
     salary_min: int | None = None
     salary_max: int | None = None
     remote: bool = False
-    skills: list[str] = Field(default=[], description="Wymagane technologie / Requirement tech")
+    skills: list[str] = Field(default=[], description="Required technologies")
     skills_nice_to_have: list[str] = Field(
-        default=[], description="Technologie z sekcji 'mile widziane' / nice to have"
+        default=[], description="Technologies from the 'nice to have' section"
     )
-    description: str = Field(default="", description="Pełna treść ogłoszenia")
+    description: str = Field(default="", description="Full text of the job ad")
 
     @model_validator(mode="after")
     def check_salary_range(self) -> Self:
