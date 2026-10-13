@@ -6,11 +6,16 @@ from offers.models import Relevance, ScoredOffer
 
 RERANK_INSTRUCTION = (
     "You rate how well fragments of job ads answer the user's question. "
-    "Give each fragment a score from 0 to 10: 10 means it directly answers the question, "
-    "0 means it is unrelated. Judge only by the content of the fragment. "
+    "Score each fragment from 0 to 10 using this scale: "
+    "0 = unrelated to the question; "
+    "1-4 = related topic, but the fragment does not answer the question; "
+    "5-6 = the fragment answers indirectly or partially, for example it mentions "
+    "a broader category that likely includes what the user asks about; "
+    "7-9 = the fragment answers the question, with minor gaps; "
+    "10 = the fragment answers the question directly. "
+    "Judge only by the content of the fragment. "
     "Return a score for every fragment, using its number as the index."
 )
-
 MIN_RELEVANCE = 5
 
 
