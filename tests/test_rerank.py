@@ -65,11 +65,24 @@ def test_rerank_sends_numbered_fragments_and_schema() -> None:
 
 
 def test_rerank_keeps_original_order_when_response_is_invalid() -> None:
-    client = FakeRerankClient("nie wiem")
+    client = FakeRerankClient("not sure")
 
     ranked = rerank(client, "Where do they provide equipment?", CANDIDATES, "test-model", top_k=2)
 
     assert [result.offer.title for result in ranked] == ["A", "B"]
+
+
+def test_rerank_treats_missing_score_as_zero() -> None:
+    scores = [{"index": 1, "score": 7}, {"index": 3, "score": 4}]
+    client = FakeRerankClient(json.dumps({"scores": scores}))
+
+    ranked = rerank(client, "Where?", CANDIDATES, "test-model", min_relevance=0)
+
+    assert [(result.offer.title, result.score) for result in ranked] == [
+        ("A", 7),
+        ("C", 4),
+        ("B", 0),
+    ]
 
 
 def test_rerank_without_candidates_skips_model() -> None:

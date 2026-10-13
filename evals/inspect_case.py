@@ -4,6 +4,8 @@ from offers.config import Settings
 from offers.evals import embed_questions_cached, load_cases
 from offers.llm import create_client
 from offers.models import ScoredOffer
+from offers.rag import RERANK_CANDIDATES
+from offers.rerank import rerank
 from offers.retrieval import CANDIDATES, hybrid_search
 from offers.store import connect, search_keywords, search_offers
 
@@ -30,7 +32,9 @@ if __name__ == "__main__":
     settings = Settings()
     client = create_client(settings)
     cases = {case.id: case for case in load_cases("evals/retrieval.json")}
-    selected = [cases[case_id] for case_id in sys.argv[1:]]
+    case_ids = [arg for arg in sys.argv[1:] if not arg.startswith("--")]
+    with_rerank = "--rerank" in sys.argv
+    selected = [cases[case_id] for case_id in case_ids]
     vectors = embed_questions_cached(
         client,
         [case.question for case in selected],
@@ -63,3 +67,14 @@ if __name__ == "__main__":
             show("vectors", semantic, case.relevant)
             show("bm25", keyword, case.relevant)
             show("RRF fusion", fused, case.relevant)
+            if with_rerank:
+                candidates = fused[:RERANK_CANDIDATES]
+                judged = rerank(
+                    client,
+                    case.question,
+                    candidates,
+                    settings.gemini_model,
+                    top_k=len(candidates),
+                    min_relevance=0,
+                )
+                show("rerank (all scores)", judged, case.relevant)

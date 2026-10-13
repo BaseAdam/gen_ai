@@ -53,7 +53,7 @@ def rerank(
     numbered.sort(key=lambda pair: scores.get(pair[0], 0), reverse=True)
 
     ranked = [
-        item.model_copy(update={"score": scores[number]})
+        item.model_copy(update={"score": scores.get(number, 0)})
         for number, item in numbered
         if scores.get(number, 0) >= min_relevance
     ]
