@@ -6,6 +6,8 @@ from google.genai import types
 
 from offers.evals import (
     AnswerRecord,
+    citation_precision,
+    citation_recall,
     cited_numbers,
     cited_titles,
     embed_questions_cached,
@@ -158,3 +160,27 @@ def test_cited_titles_maps_numbers_to_source_titles() -> None:
     answer = make_answer("Try [2] or [1, 2], not [7].", ["A", "B", "C"])
 
     assert cited_titles(answer) == {"A", "B"}
+
+
+def test_citation_precision_counts_relevant_among_cited_offers() -> None:
+    answer = make_answer("Try [1], [2] and [3].", ["A", "B", "C"])
+
+    assert citation_precision(answer, ["A", "C"]) == pytest.approx(2 / 3)
+
+
+def test_citation_precision_is_undefined_without_citations() -> None:
+    answer = make_answer("None of the offers mention it.", ["A"])
+
+    assert citation_precision(answer, ["A"]) is None
+
+
+def test_citation_recall_expects_only_relevant_offers_from_context() -> None:
+    answer = make_answer("Try [1].", ["A", "B", "C"])
+
+    assert citation_recall(answer, ["A", "B", "X"]) == 0.5
+
+
+def test_citation_recall_is_undefined_without_relevant_offers_in_context() -> None:
+    answer = make_answer("Try [1].", ["A"])
+
+    assert citation_recall(answer, ["X"]) is None

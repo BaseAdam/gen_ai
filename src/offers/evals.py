@@ -99,3 +99,21 @@ def invalid_citations(answer: RagAnswer) -> set[int]:
 def cited_titles(answer: RagAnswer) -> set[str]:
     valid = cited_numbers(answer.answer) - invalid_citations(answer)
     return {answer.sources[number - 1].offer.title for number in valid}
+
+
+def relevant_in_context(answer: RagAnswer, relevant: list[str]) -> set[str]:
+    return {source.offer.title for source in answer.sources} & set(relevant)
+
+
+def citation_precision(answer: RagAnswer, relevant: list[str]) -> float | None:
+    cited = cited_titles(answer)
+    if not cited:
+        return None
+    return len(cited & set(relevant)) / len(cited)
+
+
+def citation_recall(answer: RagAnswer, relevant: list[str]) -> float | None:
+    expected = relevant_in_context(answer, relevant)
+    if not expected:
+        return None
+    return len(cited_titles(answer) & expected) / len(expected)
