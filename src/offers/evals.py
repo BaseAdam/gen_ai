@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 from google import genai
 from pydantic import BaseModel, Field
@@ -78,3 +79,23 @@ def load_answers(path: str) -> list[AnswerRecord]:
     with open(path, encoding="utf-8") as f:
         raw_records = json.load(f)
     return [AnswerRecord.model_validate(raw) for raw in raw_records]
+
+
+CITATION_PATTERN = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
+
+
+def cited_numbers(text: str) -> set[int]:
+    numbers: set[int] = set()
+    for group in CITATION_PATTERN.findall(text):
+        numbers.update(int(part) for part in group.split(","))
+    return numbers
+
+
+def invalid_citations(answer: RagAnswer) -> set[int]:
+    numbers = cited_numbers(answer.answer)
+    return {number for number in numbers if not 1 <= number <= len(answer.sources)}
+
+
+def cited_titles(answer: RagAnswer) -> set[str]:
+    valid = cited_numbers(answer.answer) - invalid_citations(answer)
+    return {answer.sources[number - 1].offer.title for number in valid}

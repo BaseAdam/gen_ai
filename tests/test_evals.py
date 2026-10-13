@@ -6,7 +6,10 @@ from google.genai import types
 
 from offers.evals import (
     AnswerRecord,
+    cited_numbers,
+    cited_titles,
     embed_questions_cached,
+    invalid_citations,
     load_answers,
     load_cases,
     precision_at_k,
@@ -127,3 +130,31 @@ def test_answers_round_trip_through_json(tmp_path: Path) -> None:
     save_answers([record], path)
 
     assert load_answers(path) == [record]
+
+
+def make_answer(text: str, titles: list[str]) -> RagAnswer:
+    sources = [
+        ScoredOffer(offer=Offer(title=title, company="X", city="Warsaw"), score=1.0)
+        for title in titles
+    ]
+    return RagAnswer(answer=text, sources=sources)
+
+
+def test_cited_numbers_reads_single_and_grouped_citations() -> None:
+    assert cited_numbers("See [1] and [2, 3]. Also [1][5].") == {1, 2, 3, 5}
+
+
+def test_cited_numbers_ignores_brackets_without_numbers() -> None:
+    assert cited_numbers("Skills: [python, sql], not [a1] or [].") == set()
+
+
+def test_invalid_citations_are_outside_the_source_list() -> None:
+    answer = make_answer("Offers [0], [2] and [3].", ["A", "B"])
+
+    assert invalid_citations(answer) == {0, 3}
+
+
+def test_cited_titles_maps_numbers_to_source_titles() -> None:
+    answer = make_answer("Try [2] or [1, 2], not [7].", ["A", "B", "C"])
+
+    assert cited_titles(answer) == {"A", "B"}
