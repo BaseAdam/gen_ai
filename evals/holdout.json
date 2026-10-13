@@ -1,0 +1,69 @@
+[
+  {
+    "id": "code-review",
+    "question": "Which roles involve reviewing other developers' code?",
+    "relevant": [
+      "Fullstack Developer",
+      "Junior Fullstack Developer"
+    ]
+  },
+  {
+    "id": "langchain",
+    "question": "Which offers require LangChain?",
+    "relevant": [
+      "AI Engineer",
+      "LLM Engineer"
+    ]
+  },
+  {
+    "id": "present-results",
+    "question": "Where would I present data insights to business stakeholders?",
+    "relevant": [
+      "Data Analyst",
+      "Data Scientist"
+    ]
+  },
+  {
+    "id": "remote-docker",
+    "question": "Working with Docker",
+    "remote": true,
+    "relevant": [
+      "Junior Python Developer",
+      "AI Engineer",
+      "Data Engineer",
+      "Research Engineer",
+      "Platform Engineer"
+    ]
+  },
+  {
+    "id": "fastapi",
+    "question": "Job building APIs with FastAPI",
+    "relevant": [
+      "Backend Engineer"
+    ]
+  },
+  {
+    "id": "office-optional",
+    "question": "A remote job where I can still go to the office when I want",
+    "relevant": [
+      "AI Engineer",
+      "Fullstack Developer",
+      "Platform Engineer"
+    ]
+  },
+  {
+    "id": "java",
+    "question": "Which offers require Java?",
+    "relevant": []
+  },
+  {
+    "id": "nurse",
+    "question": "I'm looking for a nurse job in a hospital",
+    "relevant": []
+  },
+  {
+    "id": "weather",
+    "question": "What will the weather be like in Warsaw tomorrow?",
+    "relevant": []
+  }
+]

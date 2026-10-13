@@ -23,6 +23,7 @@ from offers.store import Connection, connect, search_keywords, search_offers
 K = 5
 PAUSE_SECONDS = 5
 WITH_RERANK = "--rerank" in sys.argv
+CASES_PATH = "evals/holdout.json" if "--holdout" in sys.argv else "evals/retrieval.json"
 VARIANTS = ["vectors", "bm25", "hybrid"] + (["rerank"] if WITH_RERANK else [])
 
 
@@ -66,7 +67,7 @@ def row(label: str, values: list[float]) -> str:
 if __name__ == "__main__":
     settings = Settings()
     client = create_client(settings)
-    cases = load_cases("evals/retrieval.json")
+    cases = load_cases(CASES_PATH)
     positives = [case for case in cases if case.relevant]
     negatives = [case for case in cases if not case.relevant]
     vectors = embed_questions_cached(
@@ -81,6 +82,7 @@ if __name__ == "__main__":
     rr: dict[str, list[float]] = {name: [] for name in VARIANTS}
     refused: dict[str, list[float]] = {name: [] for name in VARIANTS}
 
+    print(f"Cases: {CASES_PATH}")
     if WITH_RERANK:
         print(f"Reranker: {settings.gemini_model}")
     with connect(settings.database_url) as conn:

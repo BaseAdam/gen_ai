@@ -13,27 +13,38 @@ from offers.evals import (
 )
 from offers.io import load_offers
 
-CASES_PATH = "evals/retrieval.json"
 RETRIEVED = ["A", "B", "C", "D"]
 
+DEV_CASES = "evals/retrieval.json"
+HOLDOUT_CASES = "evals/holdout.json"
 
-def test_eval_cases_point_to_existing_offers() -> None:
+
+@pytest.mark.parametrize("path", [DEV_CASES, HOLDOUT_CASES])
+def test_eval_cases_point_to_existing_offers(path: str) -> None:
     titles = {offer.title for offer in load_offers("offers.json")}
 
-    for case in load_cases(CASES_PATH):
+    for case in load_cases(path):
         assert set(case.relevant) <= titles, case.id
+
+
+@pytest.mark.parametrize("path", [DEV_CASES, HOLDOUT_CASES])
+def test_eval_case_ids_are_unique(path: str) -> None:
+    ids = [case.id for case in load_cases(path)]
+
+    assert len(ids) == len(set(ids))
+
+
+def test_holdout_questions_are_not_copied_from_dev_set() -> None:
+    dev = {case.question for case in load_cases(DEV_CASES)}
+    holdout = {case.question for case in load_cases(HOLDOUT_CASES)}
+
+    assert not dev & holdout
 
 
 def test_offer_titles_are_unique() -> None:
     titles = [offer.title for offer in load_offers("offers.json")]
 
     assert len(titles) == len(set(titles))
-
-
-def test_eval_case_ids_are_unique() -> None:
-    ids = [case.id for case in load_cases(CASES_PATH)]
-
-    assert len(ids) == len(set(ids))
 
 
 def test_precision_counts_relevant_among_top_k() -> None:
