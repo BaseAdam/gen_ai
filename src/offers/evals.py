@@ -5,6 +5,7 @@ from google import genai
 from pydantic import BaseModel, Field
 
 from offers.embeddings import embed_texts
+from offers.models import RagAnswer
 
 
 class EvalCase(BaseModel):
@@ -59,3 +60,21 @@ def embed_questions_cached(
             json.dump(cache, f, ensure_ascii=False)
 
     return {question: cache[question] for question in questions}
+
+
+class AnswerRecord(BaseModel):
+    case_id: str
+    question: str
+    answer: RagAnswer
+
+
+def save_answers(records: list[AnswerRecord], path: str) -> None:
+    raw_records = [record.model_dump(mode="json") for record in records]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(raw_records, f, ensure_ascii=False, indent=2)
+
+
+def load_answers(path: str) -> list[AnswerRecord]:
+    with open(path, encoding="utf-8") as f:
+        raw_records = json.load(f)
+    return [AnswerRecord.model_validate(raw) for raw in raw_records]

@@ -13,3 +13,4 @@ wheels/
 .idea/
 
 evals/vectors-*.json
+evals/*-answers.json

@@ -5,13 +5,17 @@ import pytest
 from google.genai import types
 
 from offers.evals import (
+    AnswerRecord,
     embed_questions_cached,
+    load_answers,
     load_cases,
     precision_at_k,
     recall_at_k,
     reciprocal_rank,
+    save_answers,
 )
 from offers.io import load_offers
+from offers.models import Offer, RagAnswer, ScoredOffer
 
 RETRIEVED = ["A", "B", "C", "D"]
 
@@ -108,3 +112,18 @@ def test_embed_questions_cached_skips_api_when_everything_is_cached(tmp_path: Pa
     embed_questions_cached(client, ["ab"], "model", path)
 
     assert client.models.calls == [["ab"]]
+
+
+def test_answers_round_trip_through_json(tmp_path: Path) -> None:
+    offer = Offer(title="A", company="X", city="Warsaw")
+    source = ScoredOffer(offer=offer, score=0.9, chunk="A at X\nWhat we offer\nA laptop.")
+    record = AnswerRecord(
+        case_id="laptop",
+        question="Where will I get a laptop?",
+        answer=RagAnswer(answer="Offer [1] provides a laptop.", sources=[source]),
+    )
+    path = str(tmp_path / "answers.json")
+
+    save_answers([record], path)
+
+    assert load_answers(path) == [record]
