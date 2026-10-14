@@ -59,3 +59,10 @@ class RelevanceScore(BaseModel):
 
 class Relevance(BaseModel):
     scores: list[RelevanceScore]
+
+
+class Verdict(BaseModel):
+    reasoning: str = Field(description="Claim-by-claim check, written before the verdicts")
+    grounded: bool = Field(description="Every claim is supported by the offers")
+    citations_correct: bool = Field(description="Every [n] supports the claim it is attached to")
+    answers_question: bool = Field(description="The answer addresses what the user asked")
