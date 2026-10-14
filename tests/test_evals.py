@@ -6,6 +6,7 @@ from google.genai import types
 
 from offers.evals import (
     AnswerRecord,
+    VerdictRecord,
     citation_precision,
     citation_recall,
     cited_numbers,
@@ -14,13 +15,15 @@ from offers.evals import (
     invalid_citations,
     load_answers,
     load_cases,
+    load_verdicts,
     precision_at_k,
     recall_at_k,
     reciprocal_rank,
     save_answers,
+    save_verdicts,
 )
 from offers.io import load_offers
-from offers.models import Offer, RagAnswer, ScoredOffer
+from offers.models import Offer, RagAnswer, ScoredOffer, Verdict
 
 RETRIEVED = ["A", "B", "C", "D"]
 
@@ -184,3 +187,18 @@ def test_citation_recall_is_undefined_without_relevant_offers_in_context() -> No
     answer = make_answer("Try [1].", ["A"])
 
     assert citation_recall(answer, ["X"]) is None
+
+
+def test_verdicts_round_trip_through_json(tmp_path: Path) -> None:
+    verdict = Verdict(
+        reasoning="Offer [1] mentions a laptop.",
+        grounded=True,
+        citations_correct=True,
+        answers_question=False,
+    )
+    record = VerdictRecord(case_id="laptop", verdict=verdict)
+    path = str(tmp_path / "verdicts.json")
+
+    save_verdicts([record], path)
+
+    assert load_verdicts(path) == [record]

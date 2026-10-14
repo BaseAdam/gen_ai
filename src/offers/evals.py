@@ -6,7 +6,7 @@ from google import genai
 from pydantic import BaseModel, Field
 
 from offers.embeddings import embed_texts
-from offers.models import RagAnswer
+from offers.models import RagAnswer, Verdict
 
 
 class EvalCase(BaseModel):
@@ -117,3 +117,20 @@ def citation_recall(answer: RagAnswer, relevant: list[str]) -> float | None:
     if not expected:
         return None
     return len(cited_titles(answer) & expected) / len(expected)
+
+
+class VerdictRecord(BaseModel):
+    case_id: str
+    verdict: Verdict
+
+
+def save_verdicts(records: list[VerdictRecord], path: str) -> None:
+    raw_records = [record.model_dump(mode="json") for record in records]
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(raw_records, f, ensure_ascii=False, indent=2)
+
+
+def load_verdicts(path: str) -> list[VerdictRecord]:
+    with open(path, encoding="utf-8") as f:
+        raw_records = json.load(f)
+    return [VerdictRecord.model_validate(raw) for raw in raw_records]

@@ -41,3 +41,13 @@ def test_timeout_must_be_positive(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_TIMEOUT_SECONDS", "0")
     with pytest.raises(ValidationError, match="gemini_timeout_seconds"):
         Settings(_env_file=None)
+
+
+def test_judge_model_is_optional(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_MODEL", "test-model")
+    monkeypatch.delenv("GEMINI_JUDGE_MODEL", raising=False)
+    assert Settings(_env_file=None).gemini_judge_model is None
+
+    monkeypatch.setenv("GEMINI_JUDGE_MODEL", "judge-model")
+    assert Settings(_env_file=None).gemini_judge_model == "judge-model"

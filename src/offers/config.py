@@ -12,3 +12,4 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://offers:offers@localhost:5432/offers"
     rag_min_score: float = Field(default=0.53, ge=0, le=1)
     rag_rerank: bool = True
+    gemini_judge_model: str | None = None

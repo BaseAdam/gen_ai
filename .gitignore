@@ -14,3 +14,4 @@ wheels/
 
 evals/vectors-*.json
 evals/*-answers.json
+evals/*-verdicts-*.json
