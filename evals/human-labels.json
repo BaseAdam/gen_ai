@@ -1,0 +1,86 @@
+[
+  {
+    "case_id": "laptop",
+    "grounded": true,
+    "citations_correct": true,
+    "answers_question": true
+  },
+  {
+    "case_id": "team-building",
+    "grounded": true,
+    "citations_correct": true,
+    "answers_question": true
+  },
+  {
+    "case_id": "employment-contract",
+    "grounded": true,
+    "citations_correct": true,
+    "answers_question": true
+  },
+  {
+    "case_id": "krakow-python-sql",
+    "grounded": true,
+    "citations_correct": true,
+    "answers_question": true
+  },
+  {
+    "case_id": "mentoring",
+    "grounded": false,
+    "citations_correct": false,
+    "answers_question": true
+  },
+  {
+    "case_id": "kubernetes:wrong-citation",
+    "grounded": true,
+    "citations_correct": false,
+    "answers_question": true
+  },
+  {
+    "case_id": "pytorch:wrong-citation",
+    "grounded": true,
+    "citations_correct": false,
+    "answers_question": true
+  },
+  {
+    "case_id": "training-budget:wrong-citation",
+    "grounded": true,
+    "citations_correct": false,
+    "answers_question": true
+  },
+  {
+    "case_id": "django:invented-fact",
+    "grounded": false,
+    "citations_correct": true,
+    "answers_question": true
+  },
+  {
+    "case_id": "excel:invented-fact",
+    "grounded": false,
+    "citations_correct": true,
+    "answers_question": true
+  },
+  {
+    "case_id": "internship:invented-fact",
+    "grounded": false,
+    "citations_correct": true,
+    "answers_question": true
+  },
+  {
+    "case_id": "equipment:off-topic",
+    "grounded": true,
+    "citations_correct": true,
+    "answers_question": false
+  },
+  {
+    "case_id": "flexible-hours:off-topic",
+    "grounded": true,
+    "citations_correct": true,
+    "answers_question": false
+  },
+  {
+    "case_id": "english:off-topic",
+    "grounded": true,
+    "citations_correct": true,
+    "answers_question": false
+  }
+]

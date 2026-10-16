@@ -1,5 +1,8 @@
+import json
 import re
 from typing import Literal
+
+from pydantic import BaseModel
 
 from offers.evals import CITATION_PATTERN
 from offers.models import RagAnswer
@@ -35,3 +38,16 @@ def break_answer(answer: RagAnswer, kind: BreakKind) -> RagAnswer:
     else:
         text = describe_offers(answer)
     return answer.model_copy(update={"answer": text})
+
+
+class HumanLabel(BaseModel):
+    case_id: str
+    grounded: bool
+    citations_correct: bool
+    answers_question: bool
+
+
+def load_labels(path: str) -> list[HumanLabel]:
+    with open(path, encoding="utf-8") as f:
+        raw_labels = json.load(f)
+    return [HumanLabel.model_validate(raw) for raw in raw_labels]

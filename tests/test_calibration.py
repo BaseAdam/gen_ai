@@ -1,5 +1,8 @@
-from offers.calibration import INVENTED_CLAIM, break_answer, swap_citations
+from offers.calibration import INVENTED_CLAIM, break_answer, load_labels, swap_citations
+from offers.evals import load_cases
 from offers.models import Offer, RagAnswer, ScoredOffer
+
+LABELS_PATH = "evals/human-labels.json"
 
 
 def make_answer(text: str, titles: list[str]) -> RagAnswer:
@@ -45,3 +48,17 @@ def test_break_answer_leaves_original_untouched() -> None:
     break_answer(answer, "wrong-citation")
 
     assert answer.answer == "X [1]. Y [2]."
+
+
+def test_human_labels_point_to_dev_cases() -> None:
+    case_ids = {case.id for case in load_cases("evals/retrieval.json")}
+
+    for label in load_labels(LABELS_PATH):
+        base_id = label.case_id.split(":")[0]
+        assert base_id in case_ids, label.case_id
+
+
+def test_human_label_ids_are_unique() -> None:
+    ids = [label.case_id for label in load_labels(LABELS_PATH)]
+
+    assert len(ids) == len(set(ids))
