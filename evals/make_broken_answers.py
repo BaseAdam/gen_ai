@@ -12,7 +12,7 @@ BROKEN: list[tuple[str, BreakKind]] = [
     ("internship", "invented-fact"),
     ("equipment", "off-topic"),
     ("flexible-hours", "off-topic"),
-    ("english", "off-topic"),
+    ("training-budget", "off-topic"),
 ]
 
 if __name__ == "__main__":
