@@ -1,6 +1,16 @@
-from offers.calibration import INVENTED_CLAIM, break_answer, load_labels, swap_citations
+import pytest
+
+from offers.calibration import (
+    INVENTED_CLAIM,
+    HumanLabel,
+    break_answer,
+    compare,
+    load_labels,
+    outcome,
+    swap_citations,
+)
 from offers.evals import load_cases
-from offers.models import Offer, RagAnswer, ScoredOffer
+from offers.models import Offer, RagAnswer, ScoredOffer, Verdict
 
 LABELS_PATH = "evals/human-labels.json"
 
@@ -62,3 +72,29 @@ def test_human_label_ids_are_unique() -> None:
     ids = [label.case_id for label in load_labels(LABELS_PATH)]
 
     assert len(ids) == len(set(ids))
+
+
+@pytest.mark.parametrize(
+    ("human", "judge", "expected"),
+    [
+        (True, True, "agree"),
+        (False, False, "agree"),
+        (False, True, "missed"),
+        (True, False, "false alarm"),
+    ],
+)
+def test_outcome_names_each_kind_of_disagreement(human: bool, judge: bool, expected: str) -> None:
+    assert outcome(human, judge) == expected
+
+
+def test_compare_checks_every_criterion_separately() -> None:
+    label = HumanLabel(case_id="x", grounded=True, citations_correct=False, answers_question=True)
+    verdict = Verdict(
+        reasoning="...", grounded=True, citations_correct=True, answers_question=False
+    )
+
+    assert compare(label, verdict) == {
+        "grounded": "agree",
+        "citations_correct": "missed",
+        "answers_question": "false alarm",
+    }

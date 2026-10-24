@@ -5,9 +5,10 @@ from typing import Literal
 from pydantic import BaseModel
 
 from offers.evals import CITATION_PATTERN
-from offers.models import RagAnswer
+from offers.models import RagAnswer, Verdict
 
 type BreakKind = Literal["wrong-citation", "invented-fact", "off-topic"]
+type Outcome = Literal["agree", "missed", "false alarm"]
 
 INVENTED_CLAIM = "On top of that, this employer offers a company car and a four-day working week."
 
@@ -51,3 +52,26 @@ def load_labels(path: str) -> list[HumanLabel]:
     with open(path, encoding="utf-8") as f:
         raw_labels = json.load(f)
     return [HumanLabel.model_validate(raw) for raw in raw_labels]
+
+
+CRITERIA = ("grounded", "citations_correct", "answers_question")
+
+
+def criteria(item: HumanLabel | Verdict) -> dict[str, bool]:
+    return {
+        "grounded": item.grounded,
+        "citations_correct": item.citations_correct,
+        "answers_question": item.answers_question,
+    }
+
+
+def outcome(human: bool, judge: bool) -> Outcome:
+    if human == judge:
+        return "agree"
+    return "missed" if judge else "false alarm"
+
+
+def compare(label: HumanLabel, verdict: Verdict) -> dict[str, Outcome]:
+    human = criteria(label)
+    judge = criteria(verdict)
+    return {name: outcome(human[name], judge[name]) for name in CRITERIA}
