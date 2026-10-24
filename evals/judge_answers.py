@@ -11,9 +11,13 @@ from offers.judge import judge_answer
 from offers.llm import create_client
 
 PAUSE_SECONDS = 13
-ANSWERS_PATH = (
-    "evals/holdout-answers.json" if "--holdout" in sys.argv else "evals/retrieval-answers.json"
-)
+STOP_CODES = {429, 503, 504}
+if "--holdout" in sys.argv:
+    ANSWERS_PATH = "evals/holdout-answers.json"
+elif "--broken" in sys.argv:
+    ANSWERS_PATH = "evals/broken-answers.json"
+else:
+    ANSWERS_PATH = "evals/retrieval-answers.json"
 
 
 def mark(value: bool) -> str:
@@ -36,10 +40,11 @@ if __name__ == "__main__":
             continue
         try:
             verdict = judge_answer(client, item.question, item.answer, judge_model)
-        except errors.ClientError as error:
-            if error.code != 429:
+        except errors.APIError as error:
+            if error.code not in STOP_CODES:
                 raise
-            print(f"Quota exhausted ({error.message}). Run again later to continue.")
+            print(f"Stopped by API error {error.code}: {error.message}")
+            print("Progress is saved. Run again later to continue.")
             break
         records.append(VerdictRecord(case_id=item.case_id, verdict=verdict))
         save_verdicts(records, verdicts_path)
