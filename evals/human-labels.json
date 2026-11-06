@@ -30,7 +30,7 @@
     "answers_question": true
   },
   {
-    "case_id": "kubernetes:wrong-citation",
+    "case_id": "junior-remote:wrong-citation",
     "grounded": true,
     "citations_correct": false,
     "answers_question": true

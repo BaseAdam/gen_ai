@@ -4,7 +4,7 @@ from offers.evals import AnswerRecord, load_answers, save_answers
 ANSWERS_PATH = "evals/retrieval-answers.json"
 BROKEN_PATH = "evals/broken-answers.json"
 BROKEN: list[tuple[str, BreakKind]] = [
-    ("kubernetes", "wrong-citation"),
+    ("junior-remote", "wrong-citation"),
     ("pytorch", "wrong-citation"),
     ("training-budget", "wrong-citation"),
     ("django", "invented-fact"),
