@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from google.genai import errors, types
 from pydantic import SecretStr
 
+import offers.api
 from offers.api import app, get_client, get_conn, get_offers, get_settings
 from offers.config import Settings
 from offers.embeddings import EMBEDDING_DIMENSIONS
@@ -283,9 +284,11 @@ def test_request_id_is_visible_inside_endpoint(
 
 def test_request_summary_is_logged(api: TestClient, caplog: pytest.LogCaptureFixture) -> None:
     with caplog.at_level(logging.INFO, logger="offers"):
-        api.get("/offers")
+        api.get("/offers/99/tips")
 
-    assert any(message.startswith("GET /offers -> 200 in ") for message in caplog.messages)
+    [summary] = [record for record in caplog.records if record.name == "offers.api"]
+    assert summary.getMessage().startswith("GET /offers/99/tips -> 404 in ")
+    assert (summary.method, summary.path, summary.status) == ("GET", "/offers/99/tips", 404)
 
 
 def test_request_summary_includes_tokens_used_by_endpoint(
@@ -304,3 +307,20 @@ def test_request_summary_includes_tokens_used_by_endpoint(
 
     [summary] = [message for message in caplog.messages if message.startswith("POST /rag")]
     assert summary.endswith(", tokens: input=700 output=100 thinking=20")
+
+
+def test_startup_configures_logging_from_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = Settings(
+        gemini_api_key=SecretStr("test-key"),
+        gemini_model="test-model",
+        log_json=True,
+        _env_file=None,
+    )
+    calls: list[dict[str, Any]] = []
+    monkeypatch.setattr(offers.api, "get_settings", lambda: settings)
+    monkeypatch.setattr(offers.api, "configure_logging", lambda **kwargs: calls.append(kwargs))
+
+    with TestClient(app):
+        pass
+
+    assert calls == [{"json_format": True}]

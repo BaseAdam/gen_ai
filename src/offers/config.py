@@ -13,3 +13,4 @@ class Settings(BaseSettings):
     rag_min_score: float = Field(default=0.53, ge=0, le=1)
     rag_rerank: bool = True
     gemini_judge_model: str | None = None
+    log_json: bool = False

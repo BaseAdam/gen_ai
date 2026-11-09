@@ -1,7 +1,8 @@
 import logging
 import time
 import uuid
-from collections.abc import Awaitable, Callable, Iterator
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Annotated
 
@@ -23,9 +24,21 @@ from offers.observability import RequestContext, configure_logging, current_requ
 from offers.rag import answer_with_rag
 from offers.store import Connection, connect
 
-configure_logging()
 logger = logging.getLogger(__name__)
-app = FastAPI(title="Offers API")
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    configure_logging(json_format=get_settings().log_json)
+    yield
+
+
+app = FastAPI(title="Offers API", lifespan=lifespan)
 
 
 @app.middleware("http")
@@ -38,15 +51,25 @@ async def track_request(
     start = time.perf_counter()
     try:
         response = await call_next(request)
+        duration = elapsed_ms(start)
         logger.info(
             "%s %s -> %d in %.0f ms, tokens: input=%d output=%d thinking=%d",
             request.method,
             request.url.path,
             response.status_code,
-            elapsed_ms(start),
+            duration,
             context.input_tokens,
             context.output_tokens,
             context.thinking_tokens,
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status": response.status_code,
+                "duration_ms": round(duration),
+                "input_tokens": context.input_tokens,
+                "output_tokens": context.output_tokens,
+                "thinking_tokens": context.thinking_tokens,
+            },
         )
     finally:
         current_request.reset(token)
@@ -67,11 +90,6 @@ def handle_api_error(request: Request, exc: errors.APIError) -> JSONResponse:
 @app.exception_handler(psycopg.OperationalError)
 def handle_database_error(request: Request, exc: psycopg.OperationalError) -> JSONResponse:
     return JSONResponse(status_code=503, content={"detail": "Database is unavailable"})
-
-
-@lru_cache
-def get_settings() -> Settings:
-    return Settings()
 
 
 @lru_cache

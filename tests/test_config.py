@@ -51,3 +51,13 @@ def test_judge_model_is_optional(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setenv("GEMINI_JUDGE_MODEL", "judge-model")
     assert Settings(_env_file=None).gemini_judge_model == "judge-model"
+
+
+def test_logs_are_plain_text_unless_json_is_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_MODEL", "test-model")
+    monkeypatch.delenv("LOG_JSON", raising=False)
+    assert Settings(_env_file=None).log_json is False
+
+    monkeypatch.setenv("LOG_JSON", "true")
+    assert Settings(_env_file=None).log_json is True

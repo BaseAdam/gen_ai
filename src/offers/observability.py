@@ -1,13 +1,17 @@
+import json
 import logging
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from google.genai import types
 
 LOG_FORMAT = "%(asctime)s %(levelname)s [%(request_id)s] %(name)s: %(message)s"
+
+STANDARD_RECORD_FIELDS = set(vars(logging.makeLogRecord({}))) | {"message", "asctime"}
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +34,29 @@ class RequestIdFilter(logging.Filter):
         return True
 
 
-def configure_logging(level: int = logging.INFO) -> None:
+class JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        data: dict[str, object] = {
+            "time": datetime.fromtimestamp(record.created, UTC).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "request_id": getattr(record, "request_id", "-"),
+            "message": record.getMessage(),
+        }
+        for key, value in vars(record).items():
+            if key not in STANDARD_RECORD_FIELDS and key not in data:
+                data[key] = value
+        if record.exc_info:
+            data["exception"] = self.formatException(record.exc_info)
+        return json.dumps(data, ensure_ascii=False, default=str)
+
+
+def configure_logging(level: int = logging.INFO, json_format: bool = False) -> None:
     app_logger = logging.getLogger("offers")
     if app_logger.handlers:
         return
     handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    handler.setFormatter(JsonFormatter() if json_format else logging.Formatter(LOG_FORMAT))
     handler.addFilter(RequestIdFilter())
     app_logger.addHandler(handler)
     app_logger.setLevel(level)
@@ -51,9 +72,22 @@ def timed(step: str) -> Iterator[None]:
     try:
         yield
     except Exception as error:
-        logger.error("%s failed after %.0f ms: %r", step, elapsed_ms(start), error)
+        duration = elapsed_ms(start)
+        logger.error(
+            "%s failed after %.0f ms: %r",
+            step,
+            duration,
+            error,
+            extra={"step": step, "duration_ms": round(duration), "error": repr(error)},
+        )
         raise
-    logger.info("%s took %.0f ms", step, elapsed_ms(start))
+    duration = elapsed_ms(start)
+    logger.info(
+        "%s took %.0f ms",
+        step,
+        duration,
+        extra={"step": step, "duration_ms": round(duration)},
+    )
 
 
 def log_usage(step: str, response: types.GenerateContentResponse) -> None:
@@ -69,6 +103,12 @@ def log_usage(step: str, response: types.GenerateContentResponse) -> None:
         input_tokens,
         output_tokens,
         thinking_tokens,
+        extra={
+            "step": step,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "thinking_tokens": thinking_tokens,
+        },
     )
     context = current_request.get()
     if context:

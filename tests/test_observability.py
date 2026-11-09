@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 
@@ -5,6 +6,7 @@ import pytest
 from google.genai import types
 
 from offers.observability import (
+    JsonFormatter,
     RequestContext,
     RequestIdFilter,
     configure_logging,
@@ -29,6 +31,8 @@ def test_timed_logs_step_duration(
             pass
 
     assert caplog.messages == ["rag.embed took 250 ms"]
+    assert caplog.records[0].step == "rag.embed"
+    assert caplog.records[0].duration_ms == 250
 
 
 def test_timed_logs_failure_and_reraises(
@@ -61,6 +65,8 @@ def test_log_usage_logs_token_counts(caplog: pytest.LogCaptureFixture) -> None:
         log_usage("rag.generate", response)
 
     assert caplog.messages == ["rag.generate tokens: input=1200 output=80 thinking=40"]
+    record = caplog.records[0]
+    assert (record.input_tokens, record.output_tokens, record.thinking_tokens) == (1200, 80, 40)
 
 
 def test_log_usage_treats_missing_counts_as_zero(caplog: pytest.LogCaptureFixture) -> None:
@@ -127,3 +133,38 @@ def test_log_usage_adds_tokens_to_current_request() -> None:
         current_request.reset(token)
 
     assert (context.input_tokens, context.output_tokens, context.thinking_tokens) == (1000, 200, 20)
+
+
+def test_json_formatter_puts_extra_fields_next_to_message() -> None:
+    record = logging.makeLogRecord(
+        {
+            "name": "offers.observability",
+            "levelname": "INFO",
+            "msg": "%s took %.0f ms",
+            "args": ("rag.embed", 312.4),
+            "step": "rag.embed",
+            "duration_ms": 312,
+            "request_id": "abc123",
+        }
+    )
+
+    data = json.loads(JsonFormatter().format(record))
+
+    assert data["level"] == "INFO"
+    assert data["logger"] == "offers.observability"
+    assert data["request_id"] == "abc123"
+    assert data["message"] == "rag.embed took 312 ms"
+    assert data["step"] == "rag.embed"
+    assert data["duration_ms"] == 312
+    assert "args" not in data
+    assert "msecs" not in data
+
+
+def test_configure_logging_can_switch_to_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    app_logger = logging.getLogger("offers")
+    monkeypatch.setattr(app_logger, "handlers", [])
+
+    configure_logging(json_format=True)
+
+    [handler] = app_logger.handlers
+    assert isinstance(handler.formatter, JsonFormatter)
