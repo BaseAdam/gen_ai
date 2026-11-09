@@ -3,24 +3,30 @@ from typing import Any
 
 import pytest
 from google.genai import types
+from pydantic import ValidationError
 
 from offers.evals import (
     AnswerRecord,
+    EvalCase,
     VerdictRecord,
     citation_precision,
     citation_recall,
     cited_numbers,
     cited_titles,
     embed_questions_cached,
+    find_regressions,
     invalid_citations,
     load_answers,
     load_cases,
+    load_thresholds,
     load_verdicts,
     precision_at_k,
     recall_at_k,
     reciprocal_rank,
+    refusal,
     save_answers,
     save_verdicts,
+    summarize,
 )
 from offers.io import load_offers
 from offers.models import Offer, RagAnswer, ScoredOffer, Verdict
@@ -29,6 +35,7 @@ RETRIEVED = ["A", "B", "C", "D"]
 
 DEV_CASES = "evals/retrieval.json"
 HOLDOUT_CASES = "evals/holdout.json"
+THRESHOLDS = "evals/retrieval-thresholds.json"
 
 
 @pytest.mark.parametrize("path", [DEV_CASES, HOLDOUT_CASES])
@@ -202,3 +209,67 @@ def test_verdicts_round_trip_through_json(tmp_path: Path) -> None:
     save_verdicts([record], path)
 
     assert load_verdicts(path) == [record]
+
+
+def case(case_id: str, relevant: list[str]) -> EvalCase:
+    return EvalCase(id=case_id, question=f"Question {case_id}?", relevant=relevant)
+
+
+def test_refusal_is_one_only_for_empty_result() -> None:
+    assert refusal([]) == 1.0
+    assert refusal(["A"]) == 0.0
+
+
+def test_summarize_averages_positives_and_counts_refusals() -> None:
+    results = [
+        (case("p1", ["A", "B"]), ["A", "X"]),
+        (case("p2", ["C"]), ["X", "C"]),
+        (case("n1", []), []),
+        (case("n2", []), ["X"]),
+    ]
+
+    scores = summarize(results, k=5)
+
+    assert scores == {
+        "recall@5": pytest.approx((0.5 + 1.0) / 2),
+        "precision@5": pytest.approx((0.5 + 0.5) / 2),
+        "MRR": pytest.approx((1.0 + 0.5) / 2),
+        "refused": pytest.approx(0.5),
+    }
+
+
+def test_summarize_without_negatives_has_no_refusal_score() -> None:
+    scores = summarize([(case("p1", ["A"]), ["A"])], k=5)
+
+    assert "refused" not in scores
+
+
+def test_find_regressions_reports_metrics_below_minimum() -> None:
+    averages = {"rerank": {"recall@5": 0.9, "MRR": 0.97}}
+    thresholds = {"rerank": {"recall@5": 0.95, "MRR": 0.93}}
+
+    assert find_regressions(averages, thresholds) == ["rerank recall@5: 0.900 < 0.95"]
+
+
+def test_find_regressions_accepts_metric_exactly_at_minimum() -> None:
+    assert find_regressions({"rerank": {"refused": 1.0}}, {"rerank": {"refused": 1.0}}) == []
+
+
+def test_find_regressions_skips_variants_that_did_not_run() -> None:
+    assert find_regressions({"bm25": {"MRR": 0.99}}, {"rerank": {"MRR": 0.93}}) == []
+
+
+def test_thresholds_file_names_known_variants_and_metrics() -> None:
+    thresholds = load_thresholds(THRESHOLDS)
+
+    assert set(thresholds) <= {"vectors", "bm25", "hybrid", "rerank"}
+    for minimums in thresholds.values():
+        assert set(minimums) <= {"recall@5", "precision@5", "MRR", "refused"}
+
+
+def test_load_thresholds_rejects_values_that_are_not_numbers(tmp_path: Path) -> None:
+    path = tmp_path / "thresholds.json"
+    path.write_text('{"rerank": {"MRR": "high"}}', encoding="utf-8")
+
+    with pytest.raises(ValidationError):
+        load_thresholds(str(path))

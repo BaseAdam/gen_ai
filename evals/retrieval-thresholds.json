@@ -1,0 +1,4 @@
+{
+  "bm25": {"recall@5": 0.95, "precision@5": 0.35, "MRR": 0.95},
+  "rerank": {"recall@5": 0.95, "precision@5": 0.8, "MRR": 0.93, "refused": 1.0}
+}

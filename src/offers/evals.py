@@ -1,9 +1,10 @@
 import json
 import os
 import re
+from statistics import fmean
 
 from google import genai
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter
 
 from offers.embeddings import embed_texts
 from offers.models import RagAnswer, Verdict
@@ -43,6 +44,45 @@ def reciprocal_rank(retrieved: list[str], relevant: list[str]) -> float:
         if title in relevant:
             return 1 / rank
     return 0.0
+
+
+def refusal(retrieved: list[str]) -> float:
+    return 0.0 if retrieved else 1.0
+
+
+def summarize(results: list[tuple[EvalCase, list[str]]], k: int) -> dict[str, float]:
+    positives = [(case, retrieved) for case, retrieved in results if case.relevant]
+    negatives = [retrieved for case, retrieved in results if not case.relevant]
+    scores = {
+        f"recall@{k}": fmean(recall_at_k(r, case.relevant, k) for case, r in positives),
+        f"precision@{k}": fmean(precision_at_k(r, case.relevant, k) for case, r in positives),
+        "MRR": fmean(reciprocal_rank(r, case.relevant) for case, r in positives),
+    }
+    if negatives:
+        scores["refused"] = fmean(refusal(retrieved) for retrieved in negatives)
+    return scores
+
+
+THRESHOLDS = TypeAdapter(dict[str, dict[str, float]])
+
+
+def load_thresholds(path: str) -> dict[str, dict[str, float]]:
+    with open(path, encoding="utf-8") as f:
+        return THRESHOLDS.validate_json(f.read())
+
+
+def find_regressions(
+    averages: dict[str, dict[str, float]], thresholds: dict[str, dict[str, float]]
+) -> list[str]:
+    failures = []
+    for variant, minimums in thresholds.items():
+        if variant not in averages:
+            continue
+        for metric, minimum in minimums.items():
+            value = averages[variant][metric]
+            if value < minimum:
+                failures.append(f"{variant} {metric}: {value:.3f} < {minimum:.2f}")
+    return failures
 
 
 def embed_questions_cached(

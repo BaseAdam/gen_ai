@@ -1,6 +1,5 @@
 import sys
 import time
-from statistics import fmean
 
 from google import genai
 
@@ -8,10 +7,12 @@ from offers.config import Settings
 from offers.evals import (
     EvalCase,
     embed_questions_cached,
+    find_regressions,
     load_cases,
-    precision_at_k,
+    load_thresholds,
     recall_at_k,
-    reciprocal_rank,
+    refusal,
+    summarize,
 )
 from offers.llm import create_client
 from offers.models import ScoredOffer
@@ -23,7 +24,9 @@ from offers.store import Connection, connect, search_keywords, search_offers
 K = 5
 PAUSE_SECONDS = 5
 WITH_RERANK = "--rerank" in sys.argv
-CASES_PATH = "evals/holdout.json" if "--holdout" in sys.argv else "evals/retrieval.json"
+HOLDOUT = "--holdout" in sys.argv
+CASES_PATH = "evals/holdout.json" if HOLDOUT else "evals/retrieval.json"
+THRESHOLDS_PATH = "evals/retrieval-thresholds.json"
 VARIANTS = ["vectors", "bm25", "hybrid"] + (["rerank"] if WITH_RERANK else [])
 
 
@@ -56,6 +59,26 @@ def run_variants(
     return rankings
 
 
+def retrieved_titles(rankings: dict[str, list[ScoredOffer]]) -> dict[str, list[str]]:
+    return {name: [item.offer.title for item in ranking] for name, ranking in rankings.items()}
+
+
+def check_thresholds(averages: dict[str, dict[str, float]]) -> int:
+    thresholds = load_thresholds(THRESHOLDS_PATH)
+    skipped = [variant for variant in thresholds if variant not in averages]
+    failures = find_regressions(averages, thresholds)
+    print()
+    if skipped:
+        print(f"Not checked (variant not run): {', '.join(skipped)}")
+    if failures:
+        print("REGRESSION:")
+        for failure in failures:
+            print(f"  {failure}")
+        return 1
+    print(f"All thresholds met ({THRESHOLDS_PATH})")
+    return 0
+
+
 def header(label: str) -> str:
     return f"{label:<20}" + "".join(f"{name:>9}" for name in VARIANTS)
 
@@ -77,10 +100,7 @@ if __name__ == "__main__":
         f"evals/vectors-{settings.gemini_embedding_model}.json",
     )
 
-    recall: dict[str, list[float]] = {name: [] for name in VARIANTS}
-    precision: dict[str, list[float]] = {name: [] for name in VARIANTS}
-    rr: dict[str, list[float]] = {name: [] for name in VARIANTS}
-    refused: dict[str, list[float]] = {name: [] for name in VARIANTS}
+    results: dict[str, list[tuple[EvalCase, list[str]]]] = {name: [] for name in VARIANTS}
 
     print(f"Cases: {CASES_PATH}")
     if WITH_RERANK:
@@ -88,33 +108,32 @@ if __name__ == "__main__":
     with connect(settings.database_url) as conn:
         print(header("recall@5"))
         for case in positives:
-            rankings = run_variants(conn, client, settings, case, vectors[case.question])
-            for name, ranking in rankings.items():
-                retrieved = [item.offer.title for item in ranking]
-                recall[name].append(recall_at_k(retrieved, case.relevant, K))
-                precision[name].append(precision_at_k(retrieved, case.relevant, K))
-                rr[name].append(reciprocal_rank(retrieved, case.relevant))
-            print(row(case.id, [recall[name][-1] for name in VARIANTS]))
+            titles = retrieved_titles(
+                run_variants(conn, client, settings, case, vectors[case.question])
+            )
+            for name in VARIANTS:
+                results[name].append((case, titles[name]))
+            print(row(case.id, [recall_at_k(titles[name], case.relevant, K) for name in VARIANTS]))
             if WITH_RERANK:
                 time.sleep(PAUSE_SECONDS)
 
         print()
         print(header("refused"))
         for case in negatives:
-            rankings = run_variants(conn, client, settings, case, vectors[case.question])
-            for name, ranking in rankings.items():
-                refused[name].append(0.0 if ranking else 1.0)
-            print(row(case.id, [refused[name][-1] for name in VARIANTS]))
+            titles = retrieved_titles(
+                run_variants(conn, client, settings, case, vectors[case.question])
+            )
+            for name in VARIANTS:
+                results[name].append((case, titles[name]))
+            print(row(case.id, [refusal(titles[name]) for name in VARIANTS]))
             if WITH_RERANK:
                 time.sleep(PAUSE_SECONDS)
 
-    summary = [
-        ("recall@5", recall),
-        ("precision@5", precision),
-        ("MRR", rr),
-        ("refused", refused),
-    ]
+    averages = {name: summarize(results[name], K) for name in VARIANTS}
     print()
     print(header("average"))
-    for label, scores in summary:
-        print(row(label, [fmean(scores[name]) for name in VARIANTS]))
+    for metric in averages[VARIANTS[0]]:
+        print(row(metric, [averages[name][metric] for name in VARIANTS]))
+
+    if not HOLDOUT:
+        sys.exit(check_thresholds(averages))
