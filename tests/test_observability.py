@@ -4,7 +4,14 @@ import time
 import pytest
 from google.genai import types
 
-from offers.observability import configure_logging, log_usage, timed
+from offers.observability import (
+    RequestContext,
+    RequestIdFilter,
+    configure_logging,
+    current_request,
+    log_usage,
+    timed,
+)
 
 
 def fake_clock(monkeypatch: pytest.MonkeyPatch, *ticks: float) -> None:
@@ -71,3 +78,36 @@ def test_log_usage_skips_response_without_usage(caplog: pytest.LogCaptureFixture
         log_usage("rerank", types.GenerateContentResponse())
 
     assert caplog.messages == []
+
+
+def make_record() -> logging.LogRecord:
+    return logging.LogRecord("offers.rag", logging.INFO, __file__, 1, "message", None, None)
+
+
+def test_request_id_filter_adds_id_of_current_request() -> None:
+    record = make_record()
+    token = current_request.set(RequestContext(request_id="abc123"))
+    try:
+        RequestIdFilter().filter(record)
+    finally:
+        current_request.reset(token)
+
+    assert record.request_id == "abc123"
+
+
+def test_request_id_filter_marks_logs_outside_requests() -> None:
+    record = make_record()
+
+    RequestIdFilter().filter(record)
+
+    assert record.request_id == "-"
+
+
+def test_configured_handler_fills_request_id() -> None:
+    configure_logging()
+    [handler] = logging.getLogger("offers").handlers
+    record = make_record()
+
+    handler.filter(record)
+
+    assert handler.format(record).endswith(" INFO [-] offers.rag: message")

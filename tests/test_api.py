@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterator
 from types import SimpleNamespace
 from typing import Any
@@ -13,6 +14,7 @@ from offers.api import app, get_client, get_conn, get_offers, get_settings
 from offers.config import Settings
 from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer
+from offers.observability import current_request
 from offers.store import Connection, replace_offers
 
 OFFERS = [
@@ -249,3 +251,38 @@ def test_rag_uses_min_score_from_settings(
     response = api.post("/rag", json={"question": "Best pick?"})
 
     assert [source["offer"]["title"] for source in response.json()["sources"]] == ["B"]
+
+
+def test_every_response_gets_its_own_request_id(api: TestClient) -> None:
+    first = api.get("/offers").headers["X-Request-ID"]
+    second = api.get("/offers").headers["X-Request-ID"]
+
+    assert len(first) == 8
+    assert first != second
+
+
+def test_request_id_is_visible_inside_endpoint(
+    api: TestClient, fake_client: FakeClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw = '{"title": "Dev", "company": "Acme", "city": "Gdansk"}'
+    fake_client.models.responses = [text_response(raw)]
+    seen: list[str] = []
+    original = fake_client.models.generate_content
+
+    def spy(**kwargs: Any) -> types.GenerateContentResponse:
+        context = current_request.get()
+        seen.append(context.request_id if context else "-")
+        return original(**kwargs)
+
+    monkeypatch.setattr(fake_client.models, "generate_content", spy)
+
+    response = api.post("/offers/extract", json={"text": "Hiring a Python dev at Acme in Gdansk"})
+
+    assert seen == [response.headers["X-Request-ID"]]
+
+
+def test_request_summary_is_logged(api: TestClient, caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.INFO, logger="offers"):
+        api.get("/offers")
+
+    assert any(message.startswith("GET /offers -> 200 in ") for message in caplog.messages)

@@ -1,14 +1,17 @@
-from collections.abc import Iterator
+import logging
+import time
+import uuid
+from collections.abc import Awaitable, Callable, Iterator
 from functools import lru_cache
 from typing import Annotated
 
 import httpx
 import psycopg
-from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from google import genai
 from google.genai import errors
 from pydantic import BaseModel, Field
+from starlette.responses import JSONResponse, StreamingResponse
 
 from offers.analysis import filter_offers
 from offers.assistant import answer_question
@@ -16,12 +19,35 @@ from offers.config import Settings
 from offers.io import load_offers
 from offers.llm import convert_offer_text_to_structure, create_client, stream_interview_tips
 from offers.models import Offer, RagAnswer
-from offers.observability import configure_logging
+from offers.observability import RequestContext, configure_logging, current_request, elapsed_ms
 from offers.rag import answer_with_rag
 from offers.store import Connection, connect
 
 configure_logging()
+logger = logging.getLogger(__name__)
 app = FastAPI(title="Offers API")
+
+
+@app.middleware("http")
+async def track_request(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    request_id = uuid.uuid4().hex[:8]
+    token = current_request.set(RequestContext(request_id=request_id))
+    start = time.perf_counter()
+    try:
+        response = await call_next(request)
+        logger.info(
+            "%s %s -> %d in %.0f ms",
+            request.method,
+            request.url.path,
+            response.status_code,
+            elapsed_ms(start),
+        )
+    finally:
+        current_request.reset(token)
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 
 @app.exception_handler(httpx.TimeoutException)

@@ -2,12 +2,29 @@ import logging
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import dataclass
 
 from google.genai import types
 
-LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+LOG_FORMAT = "%(asctime)s %(levelname)s [%(request_id)s] %(name)s: %(message)s"
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RequestContext:
+    request_id: str
+
+
+current_request: ContextVar[RequestContext | None] = ContextVar("current_request", default=None)
+
+
+class RequestIdFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        context = current_request.get()
+        record.request_id = context.request_id if context else "-"
+        return True
 
 
 def configure_logging(level: int = logging.INFO) -> None:
@@ -16,6 +33,7 @@ def configure_logging(level: int = logging.INFO) -> None:
         return
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    handler.addFilter(RequestIdFilter())
     app_logger.addHandler(handler)
     app_logger.setLevel(level)
 
