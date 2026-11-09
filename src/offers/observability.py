@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RequestContext:
     request_id: str
+    input_tokens: int = 0
+    output_tokens: int = 0
+    thinking_tokens: int = 0
 
 
 current_request: ContextVar[RequestContext | None] = ContextVar("current_request", default=None)
@@ -57,10 +60,18 @@ def log_usage(step: str, response: types.GenerateContentResponse) -> None:
     usage = response.usage_metadata
     if usage is None:
         return
+    input_tokens = usage.prompt_token_count or 0
+    output_tokens = usage.candidates_token_count or 0
+    thinking_tokens = usage.thoughts_token_count or 0
     logger.info(
         "%s tokens: input=%d output=%d thinking=%d",
         step,
-        usage.prompt_token_count or 0,
-        usage.candidates_token_count or 0,
-        usage.thoughts_token_count or 0,
+        input_tokens,
+        output_tokens,
+        thinking_tokens,
     )
+    context = current_request.get()
+    if context:
+        context.input_tokens += input_tokens
+        context.output_tokens += output_tokens
+        context.thinking_tokens += thinking_tokens

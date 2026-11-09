@@ -286,3 +286,21 @@ def test_request_summary_is_logged(api: TestClient, caplog: pytest.LogCaptureFix
         api.get("/offers")
 
     assert any(message.startswith("GET /offers -> 200 in ") for message in caplog.messages)
+
+
+def test_request_summary_includes_tokens_used_by_endpoint(
+    api: TestClient, fake_client: FakeClient, conn: Connection, caplog: pytest.LogCaptureFixture
+) -> None:
+    app.dependency_overrides[get_conn] = lambda: conn
+    replace_offers(conn, OFFERS, CHUNKS, [[vec(0.0, 1.0)], [vec(1.0, 0.0)]])
+    reply = text_response("I recommend [1].")
+    reply.usage_metadata = types.GenerateContentResponseUsageMetadata(
+        prompt_token_count=700, candidates_token_count=100, thoughts_token_count=20
+    )
+    fake_client.models.responses = [reply]
+
+    with caplog.at_level(logging.INFO, logger="offers"):
+        api.post("/rag", json={"question": "Best pick?"})
+
+    [summary] = [message for message in caplog.messages if message.startswith("POST /rag")]
+    assert summary.endswith(", tokens: input=700 output=100 thinking=20")

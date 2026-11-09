@@ -33,16 +33,20 @@ async def track_request(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     request_id = uuid.uuid4().hex[:8]
-    token = current_request.set(RequestContext(request_id=request_id))
+    context = RequestContext(request_id=request_id)
+    token = current_request.set(context)
     start = time.perf_counter()
     try:
         response = await call_next(request)
         logger.info(
-            "%s %s -> %d in %.0f ms",
+            "%s %s -> %d in %.0f ms, tokens: input=%d output=%d thinking=%d",
             request.method,
             request.url.path,
             response.status_code,
             elapsed_ms(start),
+            context.input_tokens,
+            context.output_tokens,
+            context.thinking_tokens,
         )
     finally:
         current_request.reset(token)

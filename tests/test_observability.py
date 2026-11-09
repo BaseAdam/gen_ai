@@ -111,3 +111,19 @@ def test_configured_handler_fills_request_id() -> None:
     handler.filter(record)
 
     assert handler.format(record).endswith(" INFO [-] offers.rag: message")
+
+
+def test_log_usage_adds_tokens_to_current_request() -> None:
+    usage = types.GenerateContentResponseUsageMetadata(
+        prompt_token_count=500, candidates_token_count=100, thoughts_token_count=10
+    )
+    response = types.GenerateContentResponse(usage_metadata=usage)
+    context = RequestContext(request_id="abc123")
+    token = current_request.set(context)
+    try:
+        log_usage("rerank", response)
+        log_usage("rag.generate", response)
+    finally:
+        current_request.reset(token)
+
+    assert (context.input_tokens, context.output_tokens, context.thinking_tokens) == (1000, 200, 20)
