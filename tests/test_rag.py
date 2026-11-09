@@ -42,7 +42,12 @@ class FakeRagModels:
         is_rerank = kwargs["config"].response_schema is not None
         text = self.relevance if is_rerank else self.answer
         content = types.Content(role="model", parts=[types.Part(text=text)])
-        return types.GenerateContentResponse(candidates=[types.Candidate(content=content)])
+        usage = types.GenerateContentResponseUsageMetadata(
+            prompt_token_count=500 if is_rerank else 900, candidates_token_count=20
+        )
+        return types.GenerateContentResponse(
+            candidates=[types.Candidate(content=content)], usage_metadata=usage
+        )
 
 
 class FakeRagClient:
@@ -181,5 +186,22 @@ def test_answer_with_rag_logs_each_step(conn: Connection, caplog: pytest.LogCapt
     with caplog.at_level(logging.INFO, logger="offers"):
         answer_with_rag(client, conn, "Best pick?", "chat-model", "embed-model", use_rerank=True)
 
-    steps = [message.split()[0] for message in caplog.messages]
+    steps = [message.split()[0] for message in caplog.messages if " took " in message]
     assert steps == ["rag.embed", "rag.search", "rag.rerank", "rag.generate"]
+
+
+def test_answer_with_rag_logs_tokens_of_both_model_calls(
+    conn: Connection, caplog: pytest.LogCaptureFixture
+) -> None:
+    save_offers(conn)
+    client = FakeRagClient("I recommend [1].")
+    client.models.relevance = relevance(9, 9, 9)
+
+    with caplog.at_level(logging.INFO, logger="offers"):
+        answer_with_rag(client, conn, "Best pick?", "chat-model", "embed-model", use_rerank=True)
+
+    token_lines = [message for message in caplog.messages if " tokens: " in message]
+    assert token_lines == [
+        "rerank tokens: input=500 output=20 thinking=0",
+        "rag.generate tokens: input=900 output=20 thinking=0",
+    ]

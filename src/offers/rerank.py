@@ -3,6 +3,7 @@ from google.genai import types
 from pydantic import ValidationError
 
 from offers.models import Relevance, ScoredOffer
+from offers.observability import log_usage
 
 RERANK_INSTRUCTION = (
     "You rate how well fragments of job ads answer the user's question. "
@@ -47,6 +48,7 @@ def rerank(
     response = client.models.generate_content(
         model=model, contents=build_rerank_prompt(question, candidates), config=config
     )
+    log_usage("rerank", response)
 
     try:
         relevance = Relevance.model_validate_json(response.text or "")

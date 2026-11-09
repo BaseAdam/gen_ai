@@ -3,7 +3,7 @@ from google.genai import types
 
 from offers.embeddings import embed_texts
 from offers.models import RagAnswer, ScoredOffer
-from offers.observability import timed
+from offers.observability import log_usage, timed
 from offers.rerank import rerank
 from offers.retrieval import hybrid_search
 from offers.store import Connection
@@ -66,4 +66,6 @@ def answer_with_rag(
         response = client.models.generate_content(
             model=chat_model, contents=build_prompt(question, results), config=config
         )
+
+    log_usage("rag.generate", response)
     return RagAnswer(answer=response.text or "No answer", sources=results)

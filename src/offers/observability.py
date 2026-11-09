@@ -3,6 +3,8 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 
+from google.genai import types
+
 LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
 
 logger = logging.getLogger(__name__)
@@ -31,3 +33,16 @@ def timed(step: str) -> Iterator[None]:
         logger.error("%s failed after %.0f ms: %r", step, elapsed_ms(start), error)
         raise
     logger.info("%s took %.0f ms", step, elapsed_ms(start))
+
+
+def log_usage(step: str, response: types.GenerateContentResponse) -> None:
+    usage = response.usage_metadata
+    if usage is None:
+        return
+    logger.info(
+        "%s tokens: input=%d output=%d thinking=%d",
+        step,
+        usage.prompt_token_count or 0,
+        usage.candidates_token_count or 0,
+        usage.thoughts_token_count or 0,
+    )
