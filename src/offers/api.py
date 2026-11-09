@@ -16,9 +16,11 @@ from offers.config import Settings
 from offers.io import load_offers
 from offers.llm import convert_offer_text_to_structure, create_client, stream_interview_tips
 from offers.models import Offer, RagAnswer
+from offers.observability import configure_logging
 from offers.rag import answer_with_rag
 from offers.store import Connection, connect
 
+configure_logging()
 app = FastAPI(title="Offers API")
 
 

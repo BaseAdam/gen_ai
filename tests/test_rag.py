@@ -1,6 +1,8 @@
 import json
+import logging
 from typing import Any
 
+import pytest
 from google.genai import types
 
 from offers.embeddings import EMBEDDING_DIMENSIONS
@@ -169,3 +171,15 @@ def test_answer_with_rag_skips_model_when_reranker_rejects_everything(conn: Conn
 
     assert result.answer == NO_RESULTS_ANSWER
     assert len(client.models.generate_calls) == 1
+
+
+def test_answer_with_rag_logs_each_step(conn: Connection, caplog: pytest.LogCaptureFixture) -> None:
+    save_offers(conn)
+    client = FakeRagClient("I recommend [1].")
+    client.models.relevance = relevance(9, 9, 9)
+
+    with caplog.at_level(logging.INFO, logger="offers"):
+        answer_with_rag(client, conn, "Best pick?", "chat-model", "embed-model", use_rerank=True)
+
+    steps = [message.split()[0] for message in caplog.messages]
+    assert steps == ["rag.embed", "rag.search", "rag.rerank", "rag.generate"]
