@@ -7,7 +7,13 @@ from google.genai import types
 
 from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer, ScoredOffer
-from offers.rag import NO_RESULTS_ANSWER, RAG_INSTRUCTION, answer_with_rag, build_prompt
+from offers.rag import (
+    NO_RESULTS_ANSWER,
+    RAG_INSTRUCTION,
+    answer_with_rag,
+    build_prompt,
+    retrieve,
+)
 from offers.store import Connection, replace_offers
 
 
@@ -205,3 +211,14 @@ def test_answer_with_rag_logs_tokens_of_both_model_calls(
         "rerank tokens: input=500 output=20 thinking=0",
         "rag.generate tokens: input=900 output=20 thinking=0",
     ]
+
+
+def test_retrieve_returns_ranked_offers_without_writing_an_answer(conn: Connection) -> None:
+    save_offers(conn)
+    client = FakeRagClient("I recommend [1].")
+    client.models.relevance = relevance(3, 9, 6)
+
+    results = retrieve(client, conn, "Best pick?", "chat-model", "embed-model", use_rerank=True)
+
+    assert [(item.offer.title, item.score) for item in results] == [("C", 9), ("A", 6)]
+    assert len(client.models.generate_calls) == 1

@@ -31,6 +31,31 @@ def build_prompt(question: str, results: list[ScoredOffer]) -> str:
     return f"OFFERS:\n{context}\n\nQUESTION: {question}"
 
 
+def retrieve(
+    client: genai.Client,
+    conn: Connection,
+    question: str,
+    chat_model: str,
+    embedding_model: str,
+    top_k: int = 5,
+    city: str | None = None,
+    remote: bool | None = None,
+    min_score: float | None = None,
+    use_rerank: bool = False,
+) -> list[ScoredOffer]:
+    with timed("rag.embed"):
+        [query_vector] = embed_texts(client, [question], embedding_model, "RETRIEVAL_QUERY")
+    pool = RERANK_CANDIDATES if use_rerank else top_k
+    with timed("rag.search"):
+        results = hybrid_search(
+            conn, query_vector, question, pool, city=city, remote=remote, min_score=min_score
+        )
+    if use_rerank:
+        with timed("rag.rerank"):
+            results = rerank(client, question, results, chat_model, top_k)
+    return results
+
+
 def answer_with_rag(
     client: genai.Client,
     conn: Connection,
@@ -43,16 +68,18 @@ def answer_with_rag(
     min_score: float | None = None,
     use_rerank: bool = False,
 ) -> RagAnswer:
-    with timed("rag.embed"):
-        [query_vector] = embed_texts(client, [question], embedding_model, "RETRIEVAL_QUERY")
-    pool = RERANK_CANDIDATES if use_rerank else top_k
-    with timed("rag.search"):
-        results = hybrid_search(
-            conn, query_vector, question, pool, city=city, remote=remote, min_score=min_score
-        )
-    if use_rerank:
-        with timed("rag.rerank"):
-            results = rerank(client, question, results, chat_model, top_k)
+    results = retrieve(
+        client,
+        conn,
+        question,
+        chat_model,
+        embedding_model,
+        top_k=top_k,
+        city=city,
+        remote=remote,
+        min_score=min_score,
+        use_rerank=use_rerank,
+    )
     if not results:
         return RagAnswer(answer=NO_RESULTS_ANSWER, sources=[])
 
