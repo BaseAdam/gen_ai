@@ -87,7 +87,7 @@ def test_build_prompt_uses_matched_chunk_instead_of_full_description() -> None:
 
     prompt = build_prompt("What do they offer?", results)
 
-    assert "Job ad fragment:\nA at X\nWhat we offer\nFruit in the office." in prompt
+    assert "Job ad fragments:\nA at X\nWhat we offer\nFruit in the office." in prompt
     assert "Long company text." not in prompt
     assert '"description"' not in prompt
 

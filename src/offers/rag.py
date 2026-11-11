@@ -10,7 +10,7 @@ from offers.store import Connection
 
 RAG_INSTRUCTION = (
     "You are a career advisor. Answer only based on the offers in the OFFERS section. "
-    "Each offer is JSON data plus the one fragment of its job ad that best matches the question. "
+    "Each offer is JSON data plus the fragments of its job ad that best match the question. "
     "When you mention an offer, give its number in square brackets, e.g. [2]. "
     "If the offers do not answer the question, say so plainly and do not make anything up."
 )
@@ -22,7 +22,7 @@ RERANK_CANDIDATES = 10
 
 def format_source(number: int, item: ScoredOffer) -> str:
     data = item.offer.model_dump_json(exclude={"description"})
-    return f"[{number}] {data}\nJob ad fragment:\n{item.chunk}"
+    return f"[{number}] {data}\nJob ad fragments:\n{item.chunk}"
 
 
 def build_prompt(question: str, results: list[ScoredOffer]) -> str:

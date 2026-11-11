@@ -27,20 +27,39 @@ def test_rrf_score_depends_only_on_rank() -> None:
     assert result.score == pytest.approx(1 / 61)
 
 
-def test_rrf_keeps_chunk_from_first_ranking_on_tie() -> None:
-    fused = reciprocal_rank_fusion([[item(1, "A", "semantic")], [item(1, "A", "keyword")]])
-
-    assert fused[0].chunk == "semantic"
-
-
-def test_rrf_takes_chunk_from_ranking_where_offer_ranks_higher() -> None:
-    semantic = [item(2, "B", "About the company"), item(1, "A", "About the company")]
+def test_rrf_shows_chunks_from_both_rankings_best_rank_first() -> None:
+    semantic = [item(2, "B", "About the company"), item(1, "A", "Requirements")]
     keyword = [item(1, "A", "What we offer")]
 
     fused = reciprocal_rank_fusion([semantic, keyword])
 
     assert fused[0].offer.title == "A"
+    assert fused[0].chunk == "What we offer\n\nRequirements"
+
+
+def test_rrf_puts_first_ranking_chunk_first_on_tie() -> None:
+    fused = reciprocal_rank_fusion([[item(1, "A", "semantic")], [item(1, "A", "keyword")]])
+
+    assert fused[0].chunk == "semantic\n\nkeyword"
+
+
+def test_rrf_does_not_repeat_a_chunk_found_by_both_rankings() -> None:
+    fused = reciprocal_rank_fusion(
+        [[item(1, "A", "What we offer")], [item(1, "A", "What we offer")]]
+    )
+
     assert fused[0].chunk == "What we offer"
+
+
+def test_rrf_keeps_single_chunk_of_offer_found_once() -> None:
+    fused = reciprocal_rank_fusion(
+        [[item(1, "A", "Requirements")], [item(2, "B", "What we offer")]]
+    )
+
+    assert {result.offer.title: result.chunk for result in fused} == {
+        "A": "Requirements",
+        "B": "What we offer",
+    }
 
 
 def save_offers(conn: Connection) -> None:

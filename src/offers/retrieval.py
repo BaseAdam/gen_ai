@@ -7,19 +7,18 @@ CANDIDATES = 20
 
 def reciprocal_rank_fusion(rankings: list[list[ScoredOffer]], k: int = RRF_K) -> list[ScoredOffer]:
     scores: dict[int, float] = {}
-    best_rank: dict[int, int] = {}
-    best_item: dict[int, ScoredOffer] = {}
+    hits: dict[int, list[tuple[int, ScoredOffer]]] = {}
     for ranking in rankings:
         for rank, item in enumerate(ranking, start=1):
             scores[item.offer_id] = scores.get(item.offer_id, 0.0) + 1 / (k + rank)
-            if item.offer_id not in best_rank or rank < best_rank[item.offer_id]:
-                best_rank[item.offer_id] = rank
-                best_item[item.offer_id] = item
+            hits.setdefault(item.offer_id, []).append((rank, item))
 
-    fused = [
-        best_item[offer_id].model_copy(update={"score": score})
-        for offer_id, score in scores.items()
-    ]
+    fused = []
+    for offer_id, score in scores.items():
+        found = sorted(hits[offer_id], key=lambda hit: hit[0])
+        chunks = list(dict.fromkeys(item.chunk for _, item in found))
+        best = found[0][1]
+        fused.append(best.model_copy(update={"score": score, "chunk": "\n\n".join(chunks)}))
     return sorted(fused, key=lambda item: item.score, reverse=True)
 
 
