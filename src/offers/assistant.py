@@ -6,6 +6,7 @@ from pydantic import BaseModel, ValidationError
 
 from offers.analysis import avg_salary, filter_offers, salary_range
 from offers.models import Offer
+from offers.tool_loop import run_tool_loop
 
 SEARCH_OFFERS = types.FunctionDeclaration(
     name="search_offers",
@@ -96,22 +97,12 @@ def run_tool(name: str | None, args: dict[str, Any], offers: list[Offer]) -> dic
 def answer_question(
     client: genai.Client, question: str, offers: list[Offer], model: str, max_steps: int = 5
 ) -> str:
-    contents: list[types.Content] = [types.Content(role="user", parts=[types.Part(text=question)])]
-
-    for _ in range(max_steps):
-        response = client.models.generate_content(
-            model=model, contents=contents, config=assistant_config()
-        )
-        calls = response.function_calls
-        if not calls:
-            return response.text or "No answer"
-
-        if response.candidates and response.candidates[0].content:
-            contents.append(response.candidates[0].content)
-
-        for call in calls:
-            result = run_tool(call.name, call.args or {}, offers)
-            part = types.Part.from_function_response(name=call.name or "unknown", response=result)
-            contents.append(types.Content(role="user", parts=[part]))
-
-    raise RuntimeError("The model did not finish within the allowed number of steps")
+    return run_tool_loop(
+        client,
+        model,
+        question,
+        assistant_config(),
+        lambda name, args: run_tool(name, args, offers),
+        max_steps,
+        name="assistant",
+    )

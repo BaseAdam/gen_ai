@@ -1,35 +1,34 @@
+import sys
 import time
 
-from google import genai
 from google.genai import errors
 
+from offers.agent import answer_with_agent
 from offers.agent_evals import check_answer, load_tasks
 from offers.assistant import answer_question
 from offers.config import Settings
 from offers.io import load_offers
 from offers.llm import create_client
-from offers.models import Offer
+from offers.observability import configure_logging
 from offers.rag import answer_with_rag
-from offers.store import Connection, connect
+from offers.store import connect
+from offers.tools import AgentDeps
 
 TASKS_PATH = "evals/agent_tasks.json"
-SYSTEMS = ["assistant", "rag"]
-PAUSE_SECONDS = 10
+ALL_SYSTEMS = ["assistant", "rag", "agent"]
+SYSTEMS = [arg for arg in sys.argv[1:] if arg in ALL_SYSTEMS] or ALL_SYSTEMS
+PAUSE_SECONDS = 15
 
 
-def run_system(
-    name: str,
-    client: genai.Client,
-    conn: Connection,
-    settings: Settings,
-    offers: list[Offer],
-    question: str,
-) -> str:
+def run_system(name: str, deps: AgentDeps, question: str) -> str:
+    settings = deps.settings
     if name == "assistant":
-        return answer_question(client, question, offers, settings.gemini_model)
+        return answer_question(deps.client, question, deps.offers, settings.gemini_model)
+    if name == "agent":
+        return answer_with_agent(deps, question)
     result = answer_with_rag(
-        client,
-        conn,
+        deps.client,
+        deps.conn,
         question,
         settings.gemini_model,
         settings.gemini_embedding_model,
@@ -40,19 +39,23 @@ def run_system(
 
 
 if __name__ == "__main__":
+    if "--verbose" in sys.argv:
+        configure_logging()
     settings = Settings()
-    client = create_client(settings)
     offers = load_offers("offers.json")
     titles = [offer.title for offer in offers]
     tasks = load_tasks(TASKS_PATH)
     passed = dict.fromkeys(SYSTEMS, 0)
 
-    print(f"Tasks: {TASKS_PATH}, model: {settings.gemini_model}")
+    print(f"Tasks: {TASKS_PATH}, model: {settings.gemini_model}, systems: {', '.join(SYSTEMS)}")
     with connect(settings.database_url) as conn:
+        deps = AgentDeps(
+            client=create_client(settings), conn=conn, settings=settings, offers=offers
+        )
         for task in tasks:
             for name in SYSTEMS:
                 try:
-                    answer = run_system(name, client, conn, settings, offers, task.question)
+                    answer = run_system(name, deps, task.question)
                     problems = check_answer(task, answer, titles)
                 except (RuntimeError, errors.APIError) as error:
                     answer = ""

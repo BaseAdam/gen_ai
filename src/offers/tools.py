@@ -34,6 +34,7 @@ class SearchHit(BaseModel):
     city: str
     remote: bool
     fragment: str
+    relevance: float
 
 
 class SalaryStats(BaseModel):
@@ -80,6 +81,7 @@ def search_job_ads(
             city=item.offer.city,
             remote=item.offer.remote,
             fragment=item.chunk,
+            relevance=item.score,
         )
         for item in results
     ]

@@ -112,7 +112,9 @@ def test_search_job_ads_returns_offers_accepted_by_reranker(conn: Connection) ->
 
     hits = search_job_ads(make_deps(client, conn), "flexible hours")
 
-    assert [(hit.title, hit.company, hit.fragment) for hit in hits] == [("B", "Y", "b")]
+    assert [(hit.title, hit.company, hit.fragment, hit.relevance) for hit in hits] == [
+        ("B", "Y", "b", 9)
+    ]
     assert len(client.models.generate_calls) == 1
 
 
