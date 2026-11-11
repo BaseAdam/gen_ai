@@ -12,6 +12,8 @@ from offers.observability import (
     configure_logging,
     current_request,
     log_usage,
+    record_tokens,
+    request_context,
     timed,
 )
 
@@ -133,6 +135,32 @@ def test_log_usage_adds_tokens_to_current_request() -> None:
         current_request.reset(token)
 
     assert (context.input_tokens, context.output_tokens, context.thinking_tokens) == (1000, 200, 20)
+    assert context.llm_calls == 2
+
+
+def test_record_tokens_counts_several_calls_at_once(caplog: pytest.LogCaptureFixture) -> None:
+    with request_context("task") as context, caplog.at_level(logging.INFO, logger="offers"):
+        record_tokens("pyai.run", 3000, 120, 60, calls=3)
+
+    assert caplog.messages == ["pyai.run tokens: input=3000 output=120 thinking=60"]
+    assert caplog.records[0].llm_calls == 3
+    assert (context.input_tokens, context.output_tokens, context.thinking_tokens) == (3000, 120, 60)
+    assert context.llm_calls == 3
+
+
+def test_request_context_is_current_only_inside_the_block() -> None:
+    with request_context("abc123") as context:
+        assert current_request.get() is context
+        assert context.request_id == "abc123"
+
+    assert current_request.get() is None
+
+
+def test_request_context_is_cleared_after_an_error() -> None:
+    with pytest.raises(ValueError), request_context("abc123"):
+        raise ValueError("boom")
+
+    assert current_request.get() is None
 
 
 def test_json_formatter_puts_extra_fields_next_to_message() -> None:

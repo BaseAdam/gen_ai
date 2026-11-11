@@ -22,9 +22,20 @@ class RequestContext:
     input_tokens: int = 0
     output_tokens: int = 0
     thinking_tokens: int = 0
+    llm_calls: int = 0
 
 
 current_request: ContextVar[RequestContext | None] = ContextVar("current_request", default=None)
+
+
+@contextmanager
+def request_context(request_id: str) -> Iterator[RequestContext]:
+    context = RequestContext(request_id=request_id)
+    token = current_request.set(context)
+    try:
+        yield context
+    finally:
+        current_request.reset(token)
 
 
 class RequestIdFilter(logging.Filter):
@@ -90,13 +101,9 @@ def timed(step: str) -> Iterator[None]:
     )
 
 
-def log_usage(step: str, response: types.GenerateContentResponse) -> None:
-    usage = response.usage_metadata
-    if usage is None:
-        return
-    input_tokens = usage.prompt_token_count or 0
-    output_tokens = usage.candidates_token_count or 0
-    thinking_tokens = usage.thoughts_token_count or 0
+def record_tokens(
+    step: str, input_tokens: int, output_tokens: int, thinking_tokens: int, calls: int = 1
+) -> None:
     logger.info(
         "%s tokens: input=%d output=%d thinking=%d",
         step,
@@ -108,6 +115,7 @@ def log_usage(step: str, response: types.GenerateContentResponse) -> None:
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "thinking_tokens": thinking_tokens,
+            "llm_calls": calls,
         },
     )
     context = current_request.get()
@@ -115,3 +123,16 @@ def log_usage(step: str, response: types.GenerateContentResponse) -> None:
         context.input_tokens += input_tokens
         context.output_tokens += output_tokens
         context.thinking_tokens += thinking_tokens
+        context.llm_calls += calls
+
+
+def log_usage(step: str, response: types.GenerateContentResponse) -> None:
+    usage = response.usage_metadata
+    if usage is None:
+        return
+    record_tokens(
+        step,
+        usage.prompt_token_count or 0,
+        usage.candidates_token_count or 0,
+        usage.thoughts_token_count or 0,
+    )

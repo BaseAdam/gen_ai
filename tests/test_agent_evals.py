@@ -59,6 +59,46 @@ def test_check_answer_expects_refusal_without_offers() -> None:
     ]
 
 
+def test_check_answer_reads_titles_from_offers_list_when_given() -> None:
+    task = AgentTask(
+        id="t",
+        question="q",
+        expected_titles=["Platform Engineer"],
+        forbidden_titles=["Backend Engineer"],
+    )
+    answer = "Platform Engineer fits. Backend Engineer does not, it has no training budget."
+
+    assert check_answer(task, answer, TITLES, offers=["platform engineer "]) == []
+    assert check_answer(task, answer, TITLES, offers=["Backend Engineer"]) == [
+        "missing Platform Engineer",
+        "unexpected Backend Engineer",
+    ]
+
+
+def test_check_answer_flags_offers_that_do_not_exist() -> None:
+    task = AgentTask(id="t", question="q", expected_titles=["LLM Engineer"])
+
+    problems = check_answer(task, "", TITLES, offers=["LLM Engineer", "Senior LLM Engineer"])
+
+    assert problems == ["unknown offer Senior LLM Engineer"]
+
+
+def test_check_answer_refusal_with_offers_list() -> None:
+    task = AgentTask(id="t", question="q", refuse=True)
+
+    assert check_answer(task, "Sorry, I only know job offers.", TITLES, offers=[]) == []
+    assert check_answer(task, "Sorry.", TITLES, offers=["LLM Engineer"]) == [
+        "should refuse, but mentions LLM Engineer"
+    ]
+
+
+def test_check_answer_still_reads_numbers_from_text_with_offers_list() -> None:
+    task = AgentTask(id="t", question="q", expected_numbers=[12250])
+
+    assert check_answer(task, "The average is 12,250 PLN.", TITLES, offers=[]) == []
+    assert check_answer(task, "The average is high.", TITLES, offers=[]) == ["missing number 12250"]
+
+
 def test_agent_tasks_point_to_existing_offers() -> None:
     titles = {offer.title for offer in load_offers("offers.json")}
 

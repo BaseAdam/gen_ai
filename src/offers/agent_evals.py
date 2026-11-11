@@ -27,10 +27,22 @@ def numbers_in(text: str) -> list[float]:
     return [float(re.sub(r"[,  ]", "", match)) for match in NUMBER_PATTERN.findall(text)]
 
 
-def check_answer(task: AgentTask, answer: str, all_titles: list[str]) -> list[str]:
-    text = answer.lower()
-    problems = [f"missing {title}" for title in task.expected_titles if title.lower() not in text]
-    problems += [f"unexpected {title}" for title in task.forbidden_titles if title.lower() in text]
+def check_answer(
+    task: AgentTask, answer: str, all_titles: list[str], offers: list[str] | None = None
+) -> list[str]:
+    known = {title.lower() for title in all_titles}
+    problems = []
+    if offers is None:
+        text = answer.lower()
+        named = {title for title in known if title in text}
+    else:
+        named = {offer.strip().lower() for offer in offers}
+        problems += [
+            f"unknown offer {offer}" for offer in offers if offer.strip().lower() not in known
+        ]
+
+    problems += [f"missing {title}" for title in task.expected_titles if title.lower() not in named]
+    problems += [f"unexpected {title}" for title in task.forbidden_titles if title.lower() in named]
 
     found = numbers_in(answer)
     for number in task.expected_numbers:
@@ -38,7 +50,7 @@ def check_answer(task: AgentTask, answer: str, all_titles: list[str]) -> list[st
             problems.append(f"missing number {number:g}")
 
     if task.refuse:
-        mentioned = [title for title in all_titles if title.lower() in text]
+        mentioned = [title for title in all_titles if title.lower() in named]
         if mentioned:
             problems.append(f"should refuse, but mentions {', '.join(mentioned)}")
     return problems

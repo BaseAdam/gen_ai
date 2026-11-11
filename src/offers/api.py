@@ -20,7 +20,7 @@ from offers.config import Settings
 from offers.io import load_offers
 from offers.llm import convert_offer_text_to_structure, create_client, stream_interview_tips
 from offers.models import Offer, RagAnswer
-from offers.observability import RequestContext, configure_logging, current_request, elapsed_ms
+from offers.observability import configure_logging, elapsed_ms, request_context
 from offers.rag import answer_with_rag
 from offers.store import Connection, connect
 
@@ -46,10 +46,8 @@ async def track_request(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     request_id = uuid.uuid4().hex[:8]
-    context = RequestContext(request_id=request_id)
-    token = current_request.set(context)
     start = time.perf_counter()
-    try:
+    with request_context(request_id) as context:
         response = await call_next(request)
         duration = elapsed_ms(start)
         logger.info(
@@ -71,8 +69,6 @@ async def track_request(
                 "thinking_tokens": context.thinking_tokens,
             },
         )
-    finally:
-        current_request.reset(token)
     response.headers["X-Request-ID"] = request_id
     return response
 

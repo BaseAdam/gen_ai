@@ -9,6 +9,7 @@ dependencies = [
     "httpx>=0.28.1",
     "psycopg[binary]>=3.3.6",
     "pydantic>=2.13.4",
+    "pydantic-ai-slim[google]>=2.67.0",
     "pydantic-settings>=2.15.0",
 ]
 
