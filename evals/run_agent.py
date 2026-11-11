@@ -1,12 +1,13 @@
 import argparse
 import time
+from dataclasses import dataclass, field
 
 import httpx
 import pydantic_ai
 from google.genai import errors
 
 from offers.agent import answer_with_agent
-from offers.agent_evals import check_answer, check_trajectory, load_tasks
+from offers.agent_evals import AgentTask, check_answer, check_trajectory, load_tasks
 from offers.assistant import answer_question
 from offers.config import Settings
 from offers.io import load_offers
@@ -28,6 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run agent tasks against the chosen systems.")
     parser.add_argument("systems", nargs="*", choices=ALL_SYSTEMS, help="default: all systems")
     parser.add_argument("--task", action="append", default=[], help="run only this task id")
+    parser.add_argument("--repeat", type=int, default=1, help="run every task this many times")
     parser.add_argument("--verbose", action="store_true", help="show logs and full answers")
     return parser.parse_args()
 
@@ -53,12 +55,57 @@ def run_system(name: str, deps: AgentDeps, question: str) -> tuple[str, list[str
     return result.answer, None
 
 
-def add_usage(total: RequestContext, run: RequestContext) -> None:
-    total.llm_calls += run.llm_calls
-    total.steps += run.steps
-    total.input_tokens += run.input_tokens
-    total.output_tokens += run.output_tokens
-    total.thinking_tokens += run.thinking_tokens
+@dataclass
+class RunResult:
+    answer: str
+    offers: list[str] | None
+    problems: list[str]
+    path_problems: list[str] | None
+    run: RequestContext
+
+
+@dataclass
+class SystemStats:
+    runs: int = 0
+    passed: int = 0
+    paths_ok: int = 0
+    paths_judged: int = 0
+    tasks_always_passed: int = 0
+    usage: RequestContext = field(default_factory=lambda: RequestContext(request_id="total"))
+
+    def add(self, result: RunResult) -> None:
+        self.runs += 1
+        if not result.problems:
+            self.passed += 1
+        if result.path_problems is not None:
+            self.paths_judged += 1
+            if not result.path_problems:
+                self.paths_ok += 1
+        run, total = result.run, self.usage
+        total.llm_calls += run.llm_calls
+        total.steps += run.steps
+        total.input_tokens += run.input_tokens
+        total.output_tokens += run.output_tokens
+        total.thinking_tokens += run.thinking_tokens
+
+
+def run_once(
+    name: str, deps: AgentDeps, task: AgentTask, titles: list[str], label: str
+) -> RunResult:
+    offers_chosen: list[str] | None = None
+    interrupted = False
+    with request_context(f"{label}/{name}") as run:
+        try:
+            answer, offers_chosen = run_system(name, deps, task.question)
+            problems = check_answer(task, answer, titles, offers_chosen)
+        except (RuntimeError, *INFRASTRUCTURE_ERRORS) as error:
+            answer = ""
+            problems = [f"error: {error!r}"]
+            interrupted = isinstance(error, INFRASTRUCTURE_ERRORS)
+    path_problems = (
+        check_trajectory(task, run.steps) if name in TOOL_SYSTEMS and not interrupted else None
+    )
+    return RunResult(answer, offers_chosen, problems, path_problems, run)
 
 
 def verdict(problems: list[str] | None) -> str:
@@ -67,25 +114,39 @@ def verdict(problems: list[str] | None) -> str:
     return "FAIL" if problems else "pass"
 
 
-def print_summary(
-    systems: list[str],
-    passed: dict[str, int],
-    paths_ok: dict[str, int],
-    paths_judged: dict[str, int],
-    usage: dict[str, RequestContext],
-    tasks: int,
-) -> None:
+def print_result(label: str, name: str, result: RunResult, verbose: bool) -> None:
+    steps = result.run.steps
+    tools = " > ".join("+".join(step) for step in steps if step) or "no tools"
     print(
-        f"{'system':<11}{'answers':>8}{'paths':>8}"
-        f"{'steps/task':>12}{'LLM calls/task':>16}{'tokens/task':>13}"
+        f"{label:<28}{name:<11}{verdict(result.problems):<8}{verdict(result.path_problems):<6}"
+        f"{len(steps):<7}{tools}"
     )
-    for name in systems:
-        total = usage[name]
-        tokens = total.input_tokens + total.output_tokens + total.thinking_tokens
-        paths = f"{paths_ok[name]}/{paths_judged[name]}" if name in TOOL_SYSTEMS else "-"
+    for problem in result.problems:
+        print(f"{'':<4}answer: {problem}")
+    for problem in result.path_problems or []:
+        print(f"{'':<4}path: {problem}")
+    if verbose:
+        print(f"\n{result.answer}\n")
+        if result.offers is not None:
+            print(f"offers: {result.offers}\n")
+    elif result.problems:
+        print(f"{'':<4}answer was: {result.answer[:160]!r}")
+
+
+def print_summary(totals: dict[str, SystemStats], tasks: int, repeat: int) -> None:
+    print(
+        f"{'system':<11}{'answers':>9}{f'pass^{repeat}':>9}{'paths':>9}"
+        f"{'steps/run':>11}{'LLM calls/run':>15}{'tokens/run':>12}"
+    )
+    for name, stats in totals.items():
+        usage = stats.usage
+        tokens = usage.input_tokens + usage.output_tokens + usage.thinking_tokens
+        paths = f"{stats.paths_ok}/{stats.paths_judged}" if name in TOOL_SYSTEMS else "-"
         print(
-            f"{name:<11}{f'{passed[name]}/{tasks}':>8}{paths:>8}{len(total.steps) / tasks:>12.1f}"
-            f"{total.llm_calls / tasks:>16.1f}{tokens / tasks:>13,.0f}"
+            f"{name:<11}{f'{stats.passed}/{stats.runs}':>9}"
+            f"{f'{stats.tasks_always_passed}/{tasks}':>9}{paths:>9}"
+            f"{len(usage.steps) / stats.runs:>11.1f}{usage.llm_calls / stats.runs:>15.1f}"
+            f"{tokens / stats.runs:>12,.0f}"
         )
 
 
@@ -99,12 +160,12 @@ if __name__ == "__main__":
     offers = load_offers("offers.json")
     titles = [offer.title for offer in offers]
     tasks = [task for task in load_tasks(TASKS_PATH) if not args.task or task.id in args.task]
-    passed = dict.fromkeys(systems, 0)
-    paths_ok = dict.fromkeys(systems, 0)
-    paths_judged = dict.fromkeys(systems, 0)
-    usage = {name: RequestContext(request_id=name) for name in systems}
+    totals = {name: SystemStats() for name in systems}
 
-    print(f"Tasks: {len(tasks)}, model: {settings.gemini_model}, systems: {', '.join(systems)}")
+    print(
+        f"Tasks: {len(tasks)} x {args.repeat}, model: {settings.gemini_model}, "
+        f"systems: {', '.join(systems)}"
+    )
     print(f"{'task':<28}{'system':<11}{'answer':<8}{'path':<6}{'steps':<7}tools")
     with connect(settings.database_url) as conn:
         deps = AgentDeps(
@@ -112,42 +173,16 @@ if __name__ == "__main__":
         )
         for task in tasks:
             for name in systems:
-                offers_chosen: list[str] | None = None
-                interrupted = False
-                with request_context(f"{task.id}/{name}") as run:
-                    try:
-                        answer, offers_chosen = run_system(name, deps, task.question)
-                        problems = check_answer(task, answer, titles, offers_chosen)
-                    except (RuntimeError, *INFRASTRUCTURE_ERRORS) as error:
-                        answer = ""
-                        problems = [f"error: {error!r}"]
-                        interrupted = isinstance(error, INFRASTRUCTURE_ERRORS)
-                path_problems = (
-                    check_trajectory(task, run.steps)
-                    if name in TOOL_SYSTEMS and not interrupted
-                    else None
-                )
-                add_usage(usage[name], run)
-                passed[name] += not problems
-                paths_ok[name] += path_problems == []
-                paths_judged[name] += path_problems is not None
-
-                tools = " > ".join("+".join(step) for step in run.steps if step) or "no tools"
-                print(
-                    f"{task.id:<28}{name:<11}{verdict(problems):<8}{verdict(path_problems):<6}"
-                    f"{len(run.steps):<7}{tools}"
-                )
-                for problem in problems:
-                    print(f"{'':<4}answer: {problem}")
-                for problem in path_problems or []:
-                    print(f"{'':<4}path: {problem}")
-                if args.verbose:
-                    print(f"\n{answer}\n")
-                    if offers_chosen is not None:
-                        print(f"offers: {offers_chosen}\n")
-                elif problems:
-                    print(f"{'':<4}answer was: {answer[:160]!r}")
-                time.sleep(PAUSE_SECONDS)
+                stats = totals[name]
+                passed_before = stats.passed
+                for attempt in range(1, args.repeat + 1):
+                    label = task.id if args.repeat == 1 else f"{task.id}#{attempt}"
+                    result = run_once(name, deps, task, titles, label)
+                    stats.add(result)
+                    print_result(label, name, result, args.verbose)
+                    time.sleep(PAUSE_SECONDS)
+                if stats.passed - passed_before == args.repeat:
+                    stats.tasks_always_passed += 1
 
     print()
-    print_summary(systems, passed, paths_ok, paths_judged, usage, len(tasks))
+    print_summary(totals, len(tasks), args.repeat)
