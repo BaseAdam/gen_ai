@@ -61,3 +61,14 @@ def test_logs_are_plain_text_unless_json_is_enabled(monkeypatch: pytest.MonkeyPa
 
     monkeypatch.setenv("LOG_JSON", "true")
     assert Settings(_env_file=None).log_json is True
+
+
+def test_retry_attempts_must_be_at_least_one(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_MODEL", "test-model")
+    monkeypatch.delenv("GEMINI_RETRY_ATTEMPTS", raising=False)
+    assert Settings(_env_file=None).gemini_retry_attempts == 3
+
+    monkeypatch.setenv("GEMINI_RETRY_ATTEMPTS", "0")
+    with pytest.raises(ValidationError, match="gemini_retry_attempts"):
+        Settings(_env_file=None)

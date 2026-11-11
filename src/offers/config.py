@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr
     gemini_model: str
     gemini_timeout_seconds: float = Field(default=30, gt=0)
+    gemini_retry_attempts: int = Field(default=3, ge=1)
     gemini_embedding_model: str = "gemini-embedding-001"
     database_url: str = "postgresql://offers:offers@localhost:5432/offers"
     rag_min_score: float = Field(default=0.53, ge=0, le=1)

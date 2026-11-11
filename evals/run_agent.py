@@ -1,4 +1,4 @@
-import sys
+import argparse
 import time
 
 from google.genai import errors
@@ -16,8 +16,15 @@ from offers.tools import AgentDeps
 
 TASKS_PATH = "evals/agent_tasks.json"
 ALL_SYSTEMS = ["assistant", "rag", "agent"]
-SYSTEMS = [arg for arg in sys.argv[1:] if arg in ALL_SYSTEMS] or ALL_SYSTEMS
 PAUSE_SECONDS = 15
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run agent tasks against the chosen systems.")
+    parser.add_argument("systems", nargs="*", choices=ALL_SYSTEMS, help="default: all systems")
+    parser.add_argument("--task", action="append", default=[], help="run only this task id")
+    parser.add_argument("--verbose", action="store_true", help="show logs and full answers")
+    return parser.parse_args()
 
 
 def run_system(name: str, deps: AgentDeps, question: str) -> str:
@@ -39,21 +46,23 @@ def run_system(name: str, deps: AgentDeps, question: str) -> str:
 
 
 if __name__ == "__main__":
-    if "--verbose" in sys.argv:
+    args = parse_args()
+    systems = args.systems or ALL_SYSTEMS
+    if args.verbose:
         configure_logging()
     settings = Settings()
     offers = load_offers("offers.json")
     titles = [offer.title for offer in offers]
-    tasks = load_tasks(TASKS_PATH)
-    passed = dict.fromkeys(SYSTEMS, 0)
+    tasks = [task for task in load_tasks(TASKS_PATH) if not args.task or task.id in args.task]
+    passed = dict.fromkeys(systems, 0)
 
-    print(f"Tasks: {TASKS_PATH}, model: {settings.gemini_model}, systems: {', '.join(SYSTEMS)}")
+    print(f"Tasks: {len(tasks)}, model: {settings.gemini_model}, systems: {', '.join(systems)}")
     with connect(settings.database_url) as conn:
         deps = AgentDeps(
             client=create_client(settings), conn=conn, settings=settings, offers=offers
         )
         for task in tasks:
-            for name in SYSTEMS:
+            for name in systems:
                 try:
                     answer = run_system(name, deps, task.question)
                     problems = check_answer(task, answer, titles)
@@ -62,12 +71,15 @@ if __name__ == "__main__":
                     problems = [f"error: {error!r}"]
                 if problems:
                     print(f"{task.id:<28}{name:<11}FAIL  {'; '.join(problems)}")
-                    print(f"{'':<39}answer: {answer[:160]!r}")
                 else:
                     passed[name] += 1
                     print(f"{task.id:<28}{name:<11}pass")
+                if args.verbose:
+                    print(f"\n{answer}\n")
+                elif problems:
+                    print(f"{'':<39}answer: {answer[:160]!r}")
                 time.sleep(PAUSE_SECONDS)
 
     print()
-    for name in SYSTEMS:
+    for name in systems:
         print(f"{name:<11}{passed[name]}/{len(tasks)} tasks passed")

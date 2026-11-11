@@ -22,10 +22,25 @@ EXTRACTION_INSTRUCTION = (
 )
 
 
+RETRY_STATUS_CODES = [429, 500, 502, 503]
+
+
+def build_http_options(settings: Settings) -> types.HttpOptions:
+    retry = types.HttpRetryOptions(
+        attempts=settings.gemini_retry_attempts,
+        initial_delay=1.0,
+        max_delay=10.0,
+        http_status_codes=RETRY_STATUS_CODES,
+    )
+    return types.HttpOptions(
+        timeout=int(settings.gemini_timeout_seconds * 1000), retry_options=retry
+    )
+
+
 def create_client(settings: Settings) -> genai.Client:
-    http_options = types.HttpOptions(timeout=int(settings.gemini_timeout_seconds * 1000))
     return genai.Client(
-        api_key=settings.gemini_api_key.get_secret_value(), http_options=http_options
+        api_key=settings.gemini_api_key.get_secret_value(),
+        http_options=build_http_options(settings),
     )
 
 

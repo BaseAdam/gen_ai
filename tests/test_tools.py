@@ -1,9 +1,11 @@
 import json
 from typing import Any
 
+import pytest
 from google.genai import types
 from pydantic import SecretStr
 
+from offers import tools
 from offers.config import Settings
 from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer
@@ -66,11 +68,21 @@ def relevance(*scores: int) -> str:
 
 
 def test_list_offers_filters_and_leaves_out_descriptions() -> None:
-    rows = list_offers(make_deps(), city="warsaw", remote=True)
+    result = list_offers(make_deps(), city="warsaw", remote=True)
 
-    assert [row.title for row in rows] == ["A"]
-    assert rows[0].skills == ["python"]
-    assert "description" not in rows[0].model_dump()
+    assert result.total == 1
+    assert [row.title for row in result.offers] == ["A"]
+    assert result.offers[0].skills == ["python"]
+    assert "description" not in result.offers[0].model_dump()
+
+
+def test_list_offers_cuts_long_lists_but_keeps_the_total(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(tools, "MAX_LISTED_OFFERS", 2)
+
+    result = list_offers(make_deps())
+
+    assert result.total == 3
+    assert [row.title for row in result.offers] == ["A", "B"]
 
 
 def test_salary_stats_for_city() -> None:

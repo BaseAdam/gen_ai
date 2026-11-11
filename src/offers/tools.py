@@ -9,6 +9,8 @@ from offers.models import Offer
 from offers.rag import RERANK_CANDIDATES, retrieve
 from offers.store import Connection
 
+MAX_LISTED_OFFERS = 25
+
 
 @dataclass
 class AgentDeps:
@@ -26,6 +28,11 @@ class OfferRow(BaseModel):
     salary_min: int | None
     salary_max: int | None
     skills: list[str]
+
+
+class OfferList(BaseModel):
+    total: int
+    offers: list[OfferRow]
 
 
 class SearchHit(BaseModel):
@@ -53,9 +60,10 @@ def list_offers(
     city: str | None = None,
     remote: bool | None = None,
     skill: str | None = None,
-) -> list[OfferRow]:
+) -> OfferList:
     found = filter_offers(deps.offers, city=city, remote=remote, skill=skill)
-    return [OfferRow.model_validate(offer, from_attributes=True) for offer in found]
+    rows = [OfferRow.model_validate(offer, from_attributes=True) for offer in found]
+    return OfferList(total=len(rows), offers=rows[:MAX_LISTED_OFFERS])
 
 
 def search_job_ads(

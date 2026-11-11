@@ -1,7 +1,7 @@
 from typing import Any
 
 import pytest
-from google.genai import types
+from google.genai import errors, types
 from pydantic import SecretStr
 
 from offers import agent
@@ -74,8 +74,9 @@ def hit(title: str, relevance: float) -> SearchHit:
 def test_list_offers_tool_returns_rows_without_descriptions() -> None:
     result = execute_tool(make_deps(), "list_offers", {"city": "Krakow", "remote": True})
 
-    assert [row["title"] for row in result["result"]] == ["A"]
-    assert "description" not in result["result"][0]
+    assert result["result"]["total"] == 1
+    assert [row["title"] for row in result["result"]["offers"]] == ["A"]
+    assert "description" not in result["result"]["offers"][0]
 
 
 def test_salary_stats_tool_accepts_titles() -> None:
@@ -106,6 +107,17 @@ def test_invalid_arguments_go_back_as_error() -> None:
     result = execute_tool(make_deps(), "search_job_ads", {"city": "Krakow"})
 
     assert "Invalid arguments" in result["error"]
+
+
+def test_failing_tool_goes_back_as_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def overloaded(deps: AgentDeps, **kwargs: Any) -> list[SearchHit]:
+        raise errors.ServerError(503, {"error": {"code": 503, "message": "overloaded"}})
+
+    monkeypatch.setattr(agent, "search_job_ads", overloaded)
+
+    result = execute_tool(make_deps(), "search_job_ads", {"query": "mentoring for juniors"})
+
+    assert result["error"].startswith("search_job_ads is temporarily unavailable")
 
 
 def test_unknown_tool_goes_back_as_error() -> None:

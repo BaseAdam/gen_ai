@@ -5,10 +5,12 @@ from typing import Any
 
 import pytest
 from google.genai import types
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 
+from offers.config import Settings
 from offers.llm import (
     SYSTEM_INSTRUCTION,
+    build_http_options,
     convert_offer_text_to_structure,
     stream_interview_tips,
     summarize_all,
@@ -209,3 +211,21 @@ def test_stream_yields_text_pieces_and_skips_empty(offer: Offer) -> None:
     pieces = list(stream_interview_tips(client, offer, "test-model"))
 
     assert pieces == ["1. Review ", "SQL."]
+
+
+def test_client_retries_overloaded_model_but_not_slow_requests() -> None:
+    settings = Settings(
+        gemini_api_key=SecretStr("test-key"),
+        gemini_model="test-model",
+        gemini_timeout_seconds=30,
+        gemini_retry_attempts=4,
+        _env_file=None,
+    )
+
+    options = build_http_options(settings)
+
+    assert options.timeout == 30000
+    assert options.retry_options is not None
+    assert options.retry_options.attempts == 4
+    assert 503 in options.retry_options.http_status_codes
+    assert 504 not in options.retry_options.http_status_codes
