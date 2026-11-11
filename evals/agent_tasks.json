@@ -1,0 +1,58 @@
+[
+  {
+    "id": "avg-salary-warsaw",
+    "question": "What is the average salary of job offers in Warsaw?",
+    "expected_numbers": [15750]
+  },
+  {
+    "id": "count-remote",
+    "question": "How many remote job offers are there?",
+    "expected_numbers": [10]
+  },
+  {
+    "id": "compare-krakow-warsaw",
+    "question": "Is the average salary higher in Krakow or in Warsaw?",
+    "expected_numbers": [15875, 15750]
+  },
+  {
+    "id": "best-paid-docker",
+    "question": "Which offer that requires Docker has the highest maximum salary?",
+    "expected_titles": ["Research Engineer"],
+    "expected_numbers": [30000]
+  },
+  {
+    "id": "remote-krakow",
+    "question": "List the remote job offers in Krakow.",
+    "expected_titles": ["LLM Engineer", "Platform Engineer"],
+    "forbidden_titles": ["Backend Engineer", "Software Engineer"]
+  },
+  {
+    "id": "training-budget-remote",
+    "question": "Which remote offers include a training budget?",
+    "expected_titles": ["Junior AI Engineer", "Platform Engineer"],
+    "forbidden_titles": ["Machine Learning Engineer"]
+  },
+  {
+    "id": "mentoring-poznan",
+    "question": "Where in Poznan will a junior get support from a mentor?",
+    "expected_titles": ["Junior Backend Developer", "Junior AI Engineer", "Junior Fullstack Developer"],
+    "forbidden_titles": ["Python Backend Intern"]
+  },
+  {
+    "id": "flexible-hours-salary",
+    "question": "What is the average salary of the jobs with flexible working hours?",
+    "expected_titles": ["Junior Backend Developer", "Platform Engineer"],
+    "expected_numbers": [12250]
+  },
+  {
+    "id": "training-budget-well-paid",
+    "question": "Which offers with a training budget have a maximum salary above 15,000 PLN?",
+    "expected_titles": ["Machine Learning Engineer", "Platform Engineer"],
+    "forbidden_titles": ["Junior AI Engineer"]
+  },
+  {
+    "id": "weather",
+    "question": "What's the weather like in Warsaw today?",
+    "refuse": true
+  }
+]
