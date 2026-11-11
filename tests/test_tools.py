@@ -98,7 +98,7 @@ def test_salary_stats_combines_titles_with_filters() -> None:
 def save_offers(conn: Connection) -> None:
     offers = [
         Offer(title="A", company="X", city="Warsaw"),
-        Offer(title="B", company="Y", city="Krakow"),
+        Offer(title="B", company="Y", city="Krakow", salary_min=9000, salary_max=14000),
         Offer(title="C", company="Z", city="Gdansk", remote=True),
     ]
     vectors = [[vec(0.0, 1.0)], [vec(1.0, 0.0)], [vec(1.0, 1.0)]]
@@ -115,6 +115,7 @@ def test_search_job_ads_returns_offers_accepted_by_reranker(conn: Connection) ->
     assert [(hit.title, hit.company, hit.fragment, hit.relevance) for hit in hits] == [
         ("B", "Y", "b", 9)
     ]
+    assert (hits[0].salary_min, hits[0].salary_max) == (9000, 14000)
     assert len(client.models.generate_calls) == 1
 
 

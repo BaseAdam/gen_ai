@@ -33,6 +33,8 @@ class SearchHit(BaseModel):
     company: str
     city: str
     remote: bool
+    salary_min: int | None
+    salary_max: int | None
     fragment: str
     relevance: float
 
@@ -80,6 +82,8 @@ def search_job_ads(
             company=item.offer.company,
             city=item.offer.city,
             remote=item.offer.remote,
+            salary_min=item.offer.salary_min,
+            salary_max=item.offer.salary_max,
             fragment=item.chunk,
             relevance=item.score,
         )

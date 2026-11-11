@@ -40,7 +40,7 @@
   },
   {
     "id": "flexible-hours-salary",
-    "question": "What is the average salary of the jobs with flexible working hours?",
+    "question": "What is the average salary of the jobs whose ads explicitly offer flexible working hours?",
     "expected_titles": ["Junior Backend Developer", "Platform Engineer"],
     "expected_numbers": [12250]
   },

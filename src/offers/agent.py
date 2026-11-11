@@ -30,13 +30,20 @@ SEARCH_JOB_ADS = types.FunctionDeclaration(
     description=(
         "Searches the text of job ads by meaning: benefits, perks, culture, responsibilities, "
         "working conditions (e.g. 'training budget', 'mentoring for juniors'). Returns matching "
-        "offers with the fragment that matched and a relevance score from 0 to 10: "
+        "offers with their salary range, the fragment that matched and a relevance score "
+        "from 0 to 10: "
         "7 or more = the fragment answers directly, 5-6 = only a partial or indirect match."
     ),
     parameters_json_schema={
         "type": "object",
         "properties": {
-            "query": {"type": "string", "description": "What to look for in the ads"},
+            "query": {
+                "type": "string",
+                "description": (
+                    "A short phrase in the user's own words, e.g. 'support from a mentor "
+                    "for juniors'. Do not shorten it to a single keyword."
+                ),
+            },
             "city": {"type": "string", "description": "City, e.g. Poznan"},
             "remote": {
                 "type": "boolean",

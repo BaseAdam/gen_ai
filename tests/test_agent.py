@@ -60,7 +60,14 @@ def make_deps(client: Any = None) -> AgentDeps:
 
 def hit(title: str, relevance: float) -> SearchHit:
     return SearchHit(
-        title=title, company="X", city="Krakow", remote=True, fragment="...", relevance=relevance
+        title=title,
+        company="X",
+        city="Krakow",
+        remote=True,
+        salary_min=None,
+        salary_max=None,
+        fragment="...",
+        relevance=relevance,
     )
 
 
