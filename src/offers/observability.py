@@ -4,8 +4,9 @@ import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import Any
 
 from google.genai import types
 
@@ -23,6 +24,11 @@ class RequestContext:
     output_tokens: int = 0
     thinking_tokens: int = 0
     llm_calls: int = 0
+    steps: list[list[str]] = field(default_factory=list)
+
+    @property
+    def tool_calls(self) -> list[str]:
+        return [tool for step in self.steps for tool in step]
 
 
 current_request: ContextVar[RequestContext | None] = ContextVar("current_request", default=None)
@@ -136,3 +142,17 @@ def log_usage(step: str, response: types.GenerateContentResponse) -> None:
         usage.candidates_token_count or 0,
         usage.thoughts_token_count or 0,
     )
+
+
+def record_step(caller: str, calls: list[tuple[str, dict[str, Any]]]) -> None:
+    for tool, args in calls:
+        logger.info(
+            "%s calls %s(%s)",
+            caller,
+            tool,
+            json.dumps(args, ensure_ascii=False, default=str),
+            extra={"tool": tool},
+        )
+    context = current_request.get()
+    if context:
+        context.steps.append([tool for tool, _ in calls])

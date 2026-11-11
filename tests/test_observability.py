@@ -12,6 +12,7 @@ from offers.observability import (
     configure_logging,
     current_request,
     log_usage,
+    record_step,
     record_tokens,
     request_context,
     timed,
@@ -196,3 +197,28 @@ def test_configure_logging_can_switch_to_json(monkeypatch: pytest.MonkeyPatch) -
 
     [handler] = app_logger.handlers
     assert isinstance(handler.formatter, JsonFormatter)
+
+
+def test_record_step_logs_every_call_and_adds_the_step_to_request(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with request_context("task") as context, caplog.at_level(logging.INFO, logger="offers"):
+        record_step(
+            "agent", [("list_offers", {"city": "Kraków", "remote": True}), ("salary_stats", {})]
+        )
+        record_step("agent", [])
+
+    assert caplog.messages == [
+        'agent calls list_offers({"city": "Kraków", "remote": true})',
+        "agent calls salary_stats({})",
+    ]
+    assert caplog.records[0].tool == "list_offers"
+    assert context.steps == [["list_offers", "salary_stats"], []]
+    assert context.tool_calls == ["list_offers", "salary_stats"]
+
+
+def test_record_step_outside_a_request_only_logs(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.INFO, logger="offers"):
+        record_step("agent", [("list_offers", {})])
+
+    assert caplog.messages == ["agent calls list_offers({})"]

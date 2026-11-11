@@ -15,6 +15,10 @@ class AgentTask(BaseModel):
     forbidden_titles: list[str] = []
     expected_numbers: list[float] = []
     refuse: bool = False
+    expected_tools: list[str] = []
+    forbidden_tools: list[str] = []
+    max_tool_calls: int | None = None
+    max_steps: int | None = None
 
 
 def load_tasks(path: str) -> list[AgentTask]:
@@ -53,4 +57,15 @@ def check_answer(
         mentioned = [title for title in all_titles if title.lower() in named]
         if mentioned:
             problems.append(f"should refuse, but mentions {', '.join(mentioned)}")
+    return problems
+
+
+def check_trajectory(task: AgentTask, steps: list[list[str]]) -> list[str]:
+    tool_calls = [tool for step in steps for tool in step]
+    problems = [f"never called {tool}" for tool in task.expected_tools if tool not in tool_calls]
+    problems += [f"called {tool}" for tool in task.forbidden_tools if tool in tool_calls]
+    if task.max_tool_calls is not None and len(tool_calls) > task.max_tool_calls:
+        problems.append(f"{len(tool_calls)} tool calls, limit {task.max_tool_calls}")
+    if task.max_steps is not None and len(steps) > task.max_steps:
+        problems.append(f"{len(steps)} steps, limit {task.max_steps}")
     return problems

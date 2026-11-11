@@ -2,57 +2,81 @@
   {
     "id": "avg-salary-warsaw",
     "question": "What is the average salary of job offers in Warsaw?",
-    "expected_numbers": [15750]
+    "expected_numbers": [15750],
+    "expected_tools": ["salary_stats"],
+    "forbidden_tools": ["search_job_ads"],
+    "max_steps": 3
   },
   {
     "id": "count-remote",
     "question": "How many remote job offers are there?",
-    "expected_numbers": [10]
+    "expected_numbers": [10],
+    "forbidden_tools": ["search_job_ads"],
+    "max_steps": 3
   },
   {
     "id": "compare-krakow-warsaw",
     "question": "Is the average salary higher in Krakow or in Warsaw?",
-    "expected_numbers": [15875, 15750]
+    "expected_numbers": [15875, 15750],
+    "expected_tools": ["salary_stats"],
+    "forbidden_tools": ["search_job_ads"],
+    "max_steps": 3
   },
   {
     "id": "best-paid-docker",
     "question": "Which offer that requires Docker has the highest maximum salary?",
     "expected_titles": ["Research Engineer"],
-    "expected_numbers": [30000]
+    "expected_numbers": [30000],
+    "expected_tools": ["list_offers"],
+    "forbidden_tools": ["search_job_ads"],
+    "max_steps": 3
   },
   {
     "id": "remote-krakow",
     "question": "List the remote job offers in Krakow.",
     "expected_titles": ["LLM Engineer", "Platform Engineer"],
-    "forbidden_titles": ["Backend Engineer", "Software Engineer"]
+    "forbidden_titles": ["Backend Engineer", "Software Engineer"],
+    "expected_tools": ["list_offers"],
+    "forbidden_tools": ["search_job_ads"],
+    "max_steps": 3
   },
   {
     "id": "training-budget-remote",
     "question": "Which remote offers include a training budget?",
     "expected_titles": ["Junior AI Engineer", "Platform Engineer"],
-    "forbidden_titles": ["Machine Learning Engineer"]
+    "forbidden_titles": ["Machine Learning Engineer"],
+    "expected_tools": ["search_job_ads"],
+    "max_steps": 3
   },
   {
     "id": "mentoring-poznan",
     "question": "Where in Poznan will a junior get support from a mentor?",
     "expected_titles": ["Junior Backend Developer", "Junior AI Engineer", "Junior Fullstack Developer"],
-    "forbidden_titles": ["Python Backend Intern"]
+    "forbidden_titles": ["Python Backend Intern"],
+    "expected_tools": ["search_job_ads"],
+    "max_steps": 3
   },
   {
     "id": "flexible-hours-salary",
     "question": "What is the average salary of the jobs whose ads explicitly offer flexible working hours?",
     "expected_titles": ["Junior Backend Developer", "Platform Engineer"],
-    "expected_numbers": [12250]
+    "expected_numbers": [12250],
+    "expected_tools": ["search_job_ads", "salary_stats"],
+    "max_steps": 4
   },
   {
     "id": "training-budget-well-paid",
     "question": "Which offers with a training budget have a maximum salary above 15,000 PLN?",
     "expected_titles": ["Machine Learning Engineer", "Platform Engineer"],
-    "forbidden_titles": ["Junior AI Engineer"]
+    "forbidden_titles": ["Junior AI Engineer"],
+    "expected_tools": ["search_job_ads"],
+    "max_steps": 3
   },
   {
     "id": "weather",
     "question": "What's the weather like in Warsaw today?",
-    "refuse": true
+    "refuse": true,
+    "max_tool_calls": 0,
+    "max_steps": 1
   }
 ]

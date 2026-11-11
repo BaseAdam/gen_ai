@@ -1,10 +1,12 @@
 import pytest
 
-from offers.agent_evals import AgentTask, check_answer, load_tasks, numbers_in
+from offers.agent import LIST_OFFERS, SALARY_STATS, SEARCH_JOB_ADS
+from offers.agent_evals import AgentTask, check_answer, check_trajectory, load_tasks, numbers_in
 from offers.io import load_offers
 
 TASKS_PATH = "evals/agent_tasks.json"
 TITLES = ["Platform Engineer", "LLM Engineer", "Backend Engineer"]
+TOOL_NAMES = {LIST_OFFERS.name, SEARCH_JOB_ADS.name, SALARY_STATS.name}
 
 
 def test_numbers_in_reads_separated_thousands_and_decimals() -> None:
@@ -97,6 +99,72 @@ def test_check_answer_still_reads_numbers_from_text_with_offers_list() -> None:
 
     assert check_answer(task, "The average is 12,250 PLN.", TITLES, offers=[]) == []
     assert check_answer(task, "The average is high.", TITLES, offers=[]) == ["missing number 12250"]
+
+
+def test_check_trajectory_passes_a_path_within_the_rules() -> None:
+    task = AgentTask(
+        id="t",
+        question="q",
+        expected_tools=["search_job_ads", "salary_stats"],
+        forbidden_tools=["list_offers"],
+        max_steps=3,
+    )
+
+    assert check_trajectory(task, [["search_job_ads"], ["salary_stats"], []]) == []
+
+
+def test_check_trajectory_lists_every_problem() -> None:
+    task = AgentTask(
+        id="t",
+        question="q",
+        expected_tools=["salary_stats"],
+        forbidden_tools=["search_job_ads"],
+        max_tool_calls=1,
+        max_steps=2,
+    )
+
+    problems = check_trajectory(task, [["search_job_ads"], ["list_offers"], []])
+
+    assert problems == [
+        "never called salary_stats",
+        "called search_job_ads",
+        "2 tool calls, limit 1",
+        "3 steps, limit 2",
+    ]
+
+
+def test_check_trajectory_counts_parallel_calls_as_one_step() -> None:
+    task = AgentTask(id="t", question="q", max_tool_calls=2, max_steps=2)
+
+    assert check_trajectory(task, [["salary_stats", "salary_stats"], []]) == []
+    assert check_trajectory(task, [["salary_stats"], ["salary_stats"], []]) == ["3 steps, limit 2"]
+
+
+def test_check_trajectory_limits_are_inclusive_and_zero_means_no_tools() -> None:
+    task = AgentTask(id="t", question="q", max_tool_calls=0, max_steps=1)
+
+    assert check_trajectory(task, [[]]) == []
+    assert check_trajectory(task, [["list_offers"], []]) == [
+        "1 tool calls, limit 0",
+        "2 steps, limit 1",
+    ]
+
+
+def test_check_trajectory_without_rules_accepts_any_path() -> None:
+    task = AgentTask(id="t", question="q")
+
+    assert check_trajectory(task, [["list_offers"]] * 6 + [[]]) == []
+
+
+def test_agent_tasks_use_existing_tools() -> None:
+    for task in load_tasks(TASKS_PATH):
+        assert set(task.expected_tools) | set(task.forbidden_tools) <= TOOL_NAMES, task.id
+        assert not set(task.expected_tools) & set(task.forbidden_tools), task.id
+
+
+@pytest.mark.parametrize("task", load_tasks(TASKS_PATH), ids=lambda task: task.id)
+def test_agent_task_has_a_step_budget(task: AgentTask) -> None:
+    assert task.max_steps is not None
 
 
 def test_agent_tasks_point_to_existing_offers() -> None:

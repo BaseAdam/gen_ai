@@ -22,7 +22,13 @@ from offers.agent import AGENT_INSTRUCTION
 from offers.config import Settings
 from offers.models import Offer
 from offers.observability import request_context
-from offers.pyai_agent import MAX_MODEL_REQUESTS, AgentAnswer, ask_agent, build_model
+from offers.pyai_agent import (
+    ANSWER_TOOL,
+    MAX_MODEL_REQUESTS,
+    AgentAnswer,
+    ask_agent,
+    build_model,
+)
 from offers.tools import AgentDeps, SearchHit
 
 OFFERS = [
@@ -45,7 +51,7 @@ def call(tool: str, **args: Any) -> ModelResponse:
 
 
 def final(answer: str, offers: list[str]) -> ModelResponse:
-    return call("final_result", answer=answer, offers=offers)
+    return call(ANSWER_TOOL, answer=answer, offers=offers)
 
 
 def scripted(*responses: ModelResponse) -> tuple[FunctionModel, list[list[ModelMessage]]]:
@@ -97,7 +103,7 @@ def test_tools_and_output_are_declared_from_code() -> None:
     assert search["properties"]["query"]["description"].startswith("A short phrase")
     assert declared["search_job_ads"].description.startswith("Searches the text of job ads")
     output = info.output_tools[0]
-    assert output.name == "final_result"
+    assert output.name == ANSWER_TOOL == "final_result"
     assert output.parameters_json_schema["required"] == ["answer", "offers"]
     assert info.allow_text_output is False
 
@@ -186,10 +192,12 @@ def test_request_limit_stops_a_looping_model() -> None:
         calls.append(1)
         return call("list_offers", city="Krakow")
 
-    with pytest.raises(UsageLimitExceeded):
+    with request_context("task") as context, pytest.raises(UsageLimitExceeded):
         ask_agent(make_deps(), "Loop forever", model=FunctionModel(respond))
 
     assert len(calls) == MAX_MODEL_REQUESTS
+    assert context.llm_calls == MAX_MODEL_REQUESTS
+    assert context.steps == [["list_offers"]] * MAX_MODEL_REQUESTS
 
 
 def test_ask_agent_logs_tool_calls_and_counts_usage(caplog: pytest.LogCaptureFixture) -> None:
@@ -201,10 +209,11 @@ def test_ask_agent_logs_tool_calls_and_counts_usage(caplog: pytest.LogCaptureFix
         ask_agent(make_deps(), "How much does A pay?", model=model)
 
     assert 'pyai calls salary_stats({"titles": ["A"]})' in caplog.messages
-    assert "pyai.run: 2 requests, 1 tool calls" in caplog.messages
     assert "pyai.run tokens: input=2000 output=40 thinking=60" in caplog.messages
     assert (context.input_tokens, context.output_tokens, context.thinking_tokens) == (2000, 40, 60)
     assert context.llm_calls == 2
+    assert context.steps == [["salary_stats"], []]
+    assert not any(ANSWER_TOOL in message for message in caplog.messages)
 
 
 def test_build_model_uses_shared_client_and_deterministic_settings() -> None:

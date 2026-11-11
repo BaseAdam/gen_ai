@@ -4,6 +4,7 @@ from typing import Any
 import pytest
 from google.genai import types
 
+from offers.observability import request_context
 from offers.tool_loop import run_tool_loop
 
 
@@ -70,6 +71,24 @@ def test_tool_calls_are_logged_with_arguments(caplog: pytest.LogCaptureFixture) 
 
     assert 'agent calls list_offers({"city": "Krakow"})' in caplog.messages
     assert any(message.startswith("tool.list_offers took ") for message in caplog.messages)
+
+
+def test_steps_are_recorded_in_current_request() -> None:
+    client = ScriptedClient(
+        [
+            calls_response(
+                ("salary_stats", {"city": "Krakow"}), ("salary_stats", {"city": "Warsaw"})
+            ),
+            calls_response(("list_offers", {})),
+            text_response("Done."),
+        ]
+    )
+
+    with request_context("task") as context:
+        run_tool_loop(client, "m", "q", types.GenerateContentConfig(), echo)
+
+    assert context.steps == [["salary_stats", "salary_stats"], ["list_offers"], []]
+    assert context.tool_calls == ["salary_stats", "salary_stats", "list_offers"]
 
 
 def test_stops_after_max_steps() -> None:
