@@ -116,6 +116,53 @@ Baselines on the same tasks: an earlier tool-calling assistant scored 8/10 and s
 5/10. With the same model and the same tools, the framework did not change answer quality. It
 changed how much code I own and how much of the loop I can see.
 
+## Frontend
+
+A single-page React app in [`frontend/`](frontend) (Vite, TypeScript) for asking the Pydantic AI
+agent questions. It shows:
+
+- a question box with example questions, and a timer while the agent works (a run takes a few
+  seconds);
+- the answer and the matching offers with their companies, cities, salary ranges and skills;
+- the agent's path: one numbered stop per agent step with the tools it called (`list_offers`,
+  `search_job_ads`, `salary_stats`), and the model calls and tokens the whole request used;
+- a plain message when something fails: the database is down, the model timed out, or the agent
+  ran out of steps.
+
+It talks only to `POST /agent`. In development Vite forwards that path to the API on port 8000;
+in the Docker image the API serves the built files itself (`app.frontend()`), so the app has one
+origin and needs no CORS. The tests use Vitest and Testing Library, and CI lints, tests and
+builds the app.
+
+## Tracing
+
+Every request becomes one OpenTelemetry trace, viewable in Jaeger:
+
+- FastAPI creates the request spans and exports them when an OTLP endpoint is set;
+- Pydantic AI adds the agent run, each model call (with its token counts) and each tool call;
+- the MCP SDK carries the trace context from the agent into the tool server, so spans from
+  inside a tool land under that tool call;
+- the app's own steps (`rag.embed`, `rag.search`, `rag.rerank`, `rag.generate`) are spans too,
+  with the tokens of their model calls as `llm.usage` events.
+
+One agent question that searches the ads, simplified:
+
+```
+POST /agent
+  pyai.run                              tokens of the whole run
+    invoke_agent offers_agent
+      chat gemini-3.5-flash-lite        the model picks a tool
+      execute_tool search_job_ads
+        tools/call search_job_ads       MCP client -> MCP server
+          rag.embed
+          rag.search                    vectors + BM25 + fusion
+          rag.rerank                    reranker tokens
+      chat gemini-3.5-flash-lite        the model writes the answer
+```
+
+With `LOG_JSON=true` every log line carries its `trace_id`, so a log line leads straight to its
+trace. How to run it is under [Tracing locally](#tracing-locally).
+
 ## Engineering notes
 
 Things the evals and the debugging taught me, in the order they came up.
@@ -209,7 +256,7 @@ For Claude Desktop, add the server to its config file:
 }
 ```
 
-### Tracing
+### Tracing locally
 
 Compose also starts Jaeger, and the API container sends its traces there. Ask a question, then
 open http://127.0.0.1:16686 and pick the `job-offers-ai` service. With `LOG_JSON=true` every
