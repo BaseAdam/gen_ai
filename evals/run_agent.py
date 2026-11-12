@@ -10,7 +10,7 @@ from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
 from offers.agent import answer_with_agent
 from offers.agent_evals import AgentTask, check_answer, check_trajectory, load_tasks
 from offers.assistant import answer_question
-from offers.config import Settings
+from offers.config import eval_settings
 from offers.graph_agent import ask_graph
 from offers.io import load_offers
 from offers.llm import create_client
@@ -72,6 +72,7 @@ class RunResult:
     problems: list[str]
     path_problems: list[str] | None
     run: RequestContext
+    quota_exhausted: bool = False
 
 
 @dataclass
@@ -80,6 +81,7 @@ class SystemStats:
     passed: int = 0
     paths_ok: int = 0
     paths_judged: int = 0
+    tasks: int = 0
     tasks_always_passed: int = 0
     usage: RequestContext = field(default_factory=lambda: RequestContext(request_id="total"))
 
@@ -99,11 +101,17 @@ class SystemStats:
         total.thinking_tokens += run.thinking_tokens
 
 
+def daily_quota_exhausted(error: Exception) -> bool:
+    # Gemini names the exhausted quota in the message,
+    # e.g. GenerateRequestsPerDayPerProjectPerModel.
+    return "PerDay" in str(error)
+
+
 def run_once(
     name: str, deps: AgentDeps, task: AgentTask, titles: list[str], label: str
 ) -> RunResult:
     offers_chosen: list[str] | None = None
-    interrupted = False
+    interrupted = quota_exhausted = False
     with request_context(f"{label}/{name}") as run:
         try:
             answer, offers_chosen = run_system(name, deps, task.question)
@@ -112,10 +120,11 @@ def run_once(
             answer = ""
             problems = [f"error: {error!r}"]
             interrupted = isinstance(error, INFRASTRUCTURE_ERRORS)
+            quota_exhausted = daily_quota_exhausted(error)
     path_problems = (
         check_trajectory(task, run.steps) if name in TOOL_SYSTEMS and not interrupted else None
     )
-    return RunResult(answer, offers_chosen, problems, path_problems, run)
+    return RunResult(answer, offers_chosen, problems, path_problems, run, quota_exhausted)
 
 
 def verdict(problems: list[str] | None) -> str:
@@ -143,21 +152,49 @@ def print_result(label: str, name: str, result: RunResult, verbose: bool) -> Non
         print(f"{'':<4}answer was: {result.answer[:160]!r}")
 
 
-def print_summary(totals: dict[str, SystemStats], tasks: int, repeat: int) -> None:
+def print_summary(totals: dict[str, SystemStats], repeat: int) -> None:
     print(
         f"{'system':<11}{'answers':>9}{f'pass^{repeat}':>9}{'paths':>9}"
         f"{'steps/run':>11}{'LLM calls/run':>15}{'tokens/run':>12}"
     )
     for name, stats in totals.items():
+        if not stats.runs:
+            print(f"{name:<11}{'no finished runs':>18}")
+            continue
         usage = stats.usage
         tokens = usage.input_tokens + usage.output_tokens + usage.thinking_tokens
         paths = f"{stats.paths_ok}/{stats.paths_judged}" if name in TOOL_SYSTEMS else "-"
         print(
             f"{name:<11}{f'{stats.passed}/{stats.runs}':>9}"
-            f"{f'{stats.tasks_always_passed}/{tasks}':>9}{paths:>9}"
+            f"{f'{stats.tasks_always_passed}/{stats.tasks}':>9}{paths:>9}"
             f"{len(usage.steps) / stats.runs:>11.1f}{usage.llm_calls / stats.runs:>15.1f}"
             f"{tokens / stats.runs:>12,.0f}"
         )
+
+
+def run_all(
+    deps: AgentDeps,
+    tasks: list[AgentTask],
+    totals: dict[str, SystemStats],
+    titles: list[str],
+    args: argparse.Namespace,
+) -> None:
+    for task in tasks:
+        for name, stats in totals.items():
+            passed_before = stats.passed
+            for attempt in range(1, args.repeat + 1):
+                label = task.id if args.repeat == 1 else f"{task.id}#{attempt}"
+                result = run_once(name, deps, task, titles, label)
+                if result.quota_exhausted:
+                    print(f"\n{label} {name}: daily Gemini quota exhausted, stopping.")
+                    print("The summary covers the runs that finished.")
+                    return
+                stats.add(result)
+                print_result(label, name, result, args.verbose)
+                time.sleep(PAUSE_SECONDS)
+            stats.tasks += 1
+            if stats.passed - passed_before == args.repeat:
+                stats.tasks_always_passed += 1
 
 
 if __name__ == "__main__":
@@ -166,7 +203,7 @@ if __name__ == "__main__":
     systems = args.systems or ALL_SYSTEMS
     if args.verbose:
         configure_logging()
-    settings = Settings()
+    settings = eval_settings()
     offers = load_offers("offers.json")
     titles = [offer.title for offer in offers]
     tasks = [task for task in load_tasks(TASKS_PATH) if not args.task or task.id in args.task]
@@ -181,18 +218,7 @@ if __name__ == "__main__":
         deps = AgentDeps(
             client=create_client(settings), conn=conn, settings=settings, offers=offers
         )
-        for task in tasks:
-            for name in systems:
-                stats = totals[name]
-                passed_before = stats.passed
-                for attempt in range(1, args.repeat + 1):
-                    label = task.id if args.repeat == 1 else f"{task.id}#{attempt}"
-                    result = run_once(name, deps, task, titles, label)
-                    stats.add(result)
-                    print_result(label, name, result, args.verbose)
-                    time.sleep(PAUSE_SECONDS)
-                if stats.passed - passed_before == args.repeat:
-                    stats.tasks_always_passed += 1
+        run_all(deps, tasks, totals, titles, args)
 
     print()
-    print_summary(totals, len(tasks), args.repeat)
+    print_summary(totals, args.repeat)

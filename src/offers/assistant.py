@@ -77,7 +77,6 @@ ASSISTANT_INSTRUCTION = (
 def assistant_config() -> types.GenerateContentConfig:
     return types.GenerateContentConfig(
         system_instruction=ASSISTANT_INSTRUCTION,
-        temperature=0,
         tools=[types.Tool(function_declarations=[SEARCH_OFFERS, SALARY_STATS])],
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )

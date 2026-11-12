@@ -43,7 +43,6 @@ def offer_tools(deps: AgentDeps) -> MCPToolset[object]:
 
 def build_model(deps: AgentDeps) -> GoogleModel:
     settings = GoogleModelSettings(
-        temperature=0,
         google_thinking_config=types.ThinkingConfigDict(thinking_level=types.ThinkingLevel.LOW),
     )
     provider = GoogleProvider(client=deps.client)

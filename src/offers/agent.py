@@ -115,7 +115,6 @@ class SalaryStatsArgs(BaseModel):
 def agent_config() -> types.GenerateContentConfig:
     return types.GenerateContentConfig(
         system_instruction=AGENT_INSTRUCTION,
-        temperature=0,
         tools=[types.Tool(function_declarations=[LIST_OFFERS, SEARCH_JOB_ADS, SALARY_STATS])],
         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),

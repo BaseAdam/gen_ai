@@ -5,7 +5,7 @@ from statistics import fmean
 
 from google.genai import errors
 
-from offers.config import Settings
+from offers.config import eval_settings
 from offers.evals import VerdictRecord, load_answers, load_verdicts, save_verdicts
 from offers.judge import judge_answer
 from offers.llm import create_client
@@ -25,7 +25,7 @@ def mark(value: bool) -> str:
 
 
 if __name__ == "__main__":
-    settings = Settings()
+    settings = eval_settings()
     client = create_client(settings)
     judge_model = settings.gemini_judge_model or settings.gemini_model
     verdicts_path = ANSWERS_PATH.replace("-answers.json", f"-verdicts-{judge_model}.json")

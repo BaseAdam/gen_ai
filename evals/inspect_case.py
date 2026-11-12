@@ -1,6 +1,6 @@
 import sys
 
-from offers.config import Settings
+from offers.config import eval_settings
 from offers.evals import embed_questions_cached, load_cases
 from offers.llm import create_client
 from offers.models import ScoredOffer
@@ -29,7 +29,7 @@ def show(label: str, ranking: list[ScoredOffer], relevant: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    settings = Settings()
+    settings = eval_settings()
     client = create_client(settings)
     cases = {case.id: case for case in load_cases("evals/retrieval.json")}
     case_ids = [arg for arg in sys.argv[1:] if not arg.startswith("--")]

@@ -80,6 +80,10 @@ def handle_timeout(request: Request, exc: httpx.TimeoutException) -> JSONRespons
 
 @app.exception_handler(errors.APIError)
 def handle_api_error(request: Request, exc: errors.APIError) -> JSONResponse:
+    if exc.code == 504:
+        return JSONResponse(
+            status_code=504, content={"detail": "The model did not respond in time"}
+        )
     return JSONResponse(status_code=502, content={"detail": "Model service error"})
 
 

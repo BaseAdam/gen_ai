@@ -240,6 +240,6 @@ def test_build_model_uses_shared_client_and_deterministic_settings() -> None:
 
     assert model.model_name == "chat-model"
     assert model.settings is not None
-    assert model.settings.get("temperature") == 0
+    assert "temperature" not in model.settings
     thinking = model.settings.get("google_thinking_config")
     assert thinking is not None and thinking.get("thinking_level") == "LOW"

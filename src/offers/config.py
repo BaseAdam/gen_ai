@@ -1,6 +1,8 @@
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+EVAL_TIMEOUT_SECONDS = 90.0
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
@@ -15,3 +17,14 @@ class Settings(BaseSettings):
     rag_rerank: bool = True
     gemini_judge_model: str | None = None
     log_json: bool = False
+
+
+def eval_settings() -> Settings:
+    """Settings for batch evals: like the app's, but with a model timeout of at least 90 s.
+
+    The API keeps the short timeout because a user is waiting; an eval would rather wait
+    than lose a run to a slow response.
+    """
+    settings = Settings()
+    timeout = max(settings.gemini_timeout_seconds, EVAL_TIMEOUT_SECONDS)
+    return settings.model_copy(update={"gemini_timeout_seconds": timeout})

@@ -1,7 +1,7 @@
 import sys
 import time
 
-from offers.config import Settings
+from offers.config import eval_settings
 from offers.evals import AnswerRecord, load_cases, save_answers
 from offers.llm import create_client
 from offers.rag import answer_with_rag
@@ -12,7 +12,7 @@ CASES_PATH = "evals/holdout.json" if "--holdout" in sys.argv else "evals/retriev
 ANSWERS_PATH = CASES_PATH.replace(".json", "-answers.json")
 
 if __name__ == "__main__":
-    settings = Settings()
+    settings = eval_settings()
     client = create_client(settings)
 
     records = []

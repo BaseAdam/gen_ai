@@ -39,7 +39,6 @@ def rerank(
 
     config = types.GenerateContentConfig(
         system_instruction=RERANK_INSTRUCTION,
-        temperature=0,
         response_mime_type="application/json",
         response_schema=Relevance,
         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),

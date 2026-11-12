@@ -176,6 +176,16 @@ def test_rag_uses_reranker_when_enabled(
     assert [source["offer"]["title"] for source in body["sources"]] == ["A"]
 
 
+def test_model_deadline_returns_504(api: TestClient, fake_client: FakeClient) -> None:
+    body = {"error": {"code": 504, "message": "Deadline expired", "status": "DEADLINE_EXCEEDED"}}
+    fake_client.models.error = errors.APIError(504, body)
+
+    response = api.post("/ask", json={"question": "How much do they pay in Warsaw?"})
+
+    assert response.status_code == 504
+    assert response.json() == {"detail": "The model did not respond in time"}
+
+
 def test_model_error_returns_502_without_details(api: TestClient, fake_client: FakeClient) -> None:
     body = {"error": {"code": 503, "message": "internal detail", "status": "UNAVAILABLE"}}
     fake_client.models.error = errors.APIError(503, body)

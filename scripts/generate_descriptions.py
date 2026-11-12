@@ -30,7 +30,6 @@ if __name__ == "__main__":
     offers = load_offers(OFFERS_PATH)
     config = types.GenerateContentConfig(
         system_instruction=INSTRUCTION,
-        temperature=0.8,
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )
 

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from offers.config import Settings
+from offers.config import EVAL_TIMEOUT_SECONDS, Settings, eval_settings
 
 
 def test_reads_key_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -72,3 +72,14 @@ def test_retry_attempts_must_be_at_least_one(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setenv("GEMINI_RETRY_ATTEMPTS", "0")
     with pytest.raises(ValidationError, match="gemini_retry_attempts"):
         Settings(_env_file=None)
+
+
+@pytest.mark.parametrize(("configured", "expected"), [("30", EVAL_TIMEOUT_SECONDS), ("120", 120.0)])
+def test_eval_settings_use_at_least_the_eval_timeout(
+    monkeypatch: pytest.MonkeyPatch, configured: str, expected: float
+) -> None:
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_MODEL", "test-model")
+    monkeypatch.setenv("GEMINI_TIMEOUT_SECONDS", configured)
+
+    assert eval_settings().gemini_timeout_seconds == expected

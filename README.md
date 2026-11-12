@@ -123,7 +123,8 @@ Things the evals and the debugging taught me, in the order they came up.
 - **`temperature` did nothing.** For `gemini-3.5-flash-lite` the API ignores `temperature`,
   `top_p` and `top_k` ([Google docs](https://ai.google.dev/gemini-api/docs/generate-content/whats-new-gemini-3.6)),
   which explained why the same agent wrote different search queries between runs. That is why
-  reliability is measured with repeated runs (pass^k).
+  reliability is measured with repeated runs (pass^k). The code no longer sends these
+  parameters, and a test keeps it that way.
 - **Read what the framework actually sends.** `ChatGoogleGenerativeAI` ignores an injected
   client and builds its own, so retry and timeout settings are passed per request. The MCP SDK
   configures root logging when a server is created. `langchain-mcp-adapters` still imports
@@ -181,13 +182,15 @@ For Claude Desktop, add the server to its config file:
 uv run pytest                    # tests that need Postgres are skipped when it is not running
 uv run ruff check . && uv run mypy
 
-uv run python evals/run_retrieval.py --rerank           # retrieval metrics, exits 1 on a regression
+uv run python evals/run_retrieval.py --rerank           # exit code 1 = regression, 2 = interrupted
 uv run python evals/run_agent.py pyai graph --repeat 3  # agent tasks with pass^k
 uv run python evals/generate_answers.py                 # then check_citations.py, judge_answers.py
 uv run python evals/calibrate_judge.py                  # judge vs human labels
 ```
 
-The evals call Gemini many times; on the free tier a full agent run takes several minutes.
+The evals call Gemini many times; on the free tier a full agent run takes several minutes. They
+use a 90 s model timeout (the API keeps 30 s, because a user is waiting), and the agent eval
+stops with a partial summary when the daily quota runs out.
 
 ## Project layout
 

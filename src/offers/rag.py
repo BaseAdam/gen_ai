@@ -85,7 +85,6 @@ def answer_with_rag(
 
     config = types.GenerateContentConfig(
         system_instruction=RAG_INSTRUCTION,
-        temperature=0.2,
         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )

@@ -1,12 +1,15 @@
 import asyncio
 import json
+import re
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import pytest
 from google.genai import types
 from pydantic import SecretStr, ValidationError
 
+import offers
 from offers.config import Settings
 from offers.llm import (
     SYSTEM_INSTRUCTION,
@@ -229,3 +232,13 @@ def test_client_retries_overloaded_model_but_not_slow_requests() -> None:
     assert options.retry_options.attempts == 4
     assert 503 in options.retry_options.http_status_codes
     assert 504 not in options.retry_options.http_status_codes
+
+
+def test_code_does_not_send_deprecated_sampling_parameters() -> None:
+    # Current Gemini models ignore temperature, top_p and top_k; future ones reject them.
+    # (top_k is left out: in this code it is the number of search results.)
+    sources = Path(offers.__file__).parent.glob("*.py")
+    pattern = re.compile(r"\b(temperature|top_p)\s*=")
+    offenders = [path.name for path in sources if pattern.search(path.read_text(encoding="utf-8"))]
+
+    assert offenders == []

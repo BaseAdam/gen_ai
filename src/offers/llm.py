@@ -21,6 +21,8 @@ EXTRACTION_INSTRUCTION = (
 )
 
 
+# No 504: the server sends it after spending the whole deadline (the SDK passes our timeout
+# as X-Server-Timeout), so a retry would multiply the wait instead of helping.
 RETRY_STATUS_CODES = [429, 500, 502, 503]
 
 
@@ -61,7 +63,6 @@ def _convert_response_to_summary(response: GenerateContentResponse) -> OfferSumm
 def _generate_content_config() -> GenerateContentConfig:
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_INSTRUCTION,
-        temperature=0.1,
         max_output_tokens=10000,
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )
@@ -71,7 +72,6 @@ def _generate_content_config() -> GenerateContentConfig:
 def _generate_structured_content_config() -> GenerateContentConfig:
     config = types.GenerateContentConfig(
         system_instruction=EXTRACTION_INSTRUCTION,
-        temperature=0,
         response_mime_type="application/json",
         response_schema=Offer,
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
@@ -125,7 +125,6 @@ TIPS_INSTRUCTION = (
 def stream_interview_tips(client: genai.Client, offer: Offer, model: str) -> Iterator[str]:
     config = types.GenerateContentConfig(
         system_instruction=TIPS_INSTRUCTION,
-        temperature=0.3,
         automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
     )
     stream = client.models.generate_content_stream(

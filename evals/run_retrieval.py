@@ -1,9 +1,11 @@
 import sys
 import time
 
+import httpx
 from google import genai
+from google.genai import errors
 
-from offers.config import Settings
+from offers.config import Settings, eval_settings
 from offers.evals import (
     EvalCase,
     embed_questions_cached,
@@ -88,7 +90,7 @@ def row(label: str, values: list[float]) -> str:
 
 
 if __name__ == "__main__":
-    settings = Settings()
+    settings = eval_settings()
     client = create_client(settings)
     cases = load_cases(CASES_PATH)
     positives = [case for case in cases if case.relevant]
@@ -105,29 +107,36 @@ if __name__ == "__main__":
     print(f"Cases: {CASES_PATH}")
     if WITH_RERANK:
         print(f"Reranker: {settings.gemini_model}")
-    with connect(settings.database_url) as conn:
-        print(header("recall@5"))
-        for case in positives:
-            titles = retrieved_titles(
-                run_variants(conn, client, settings, case, vectors[case.question])
-            )
-            for name in VARIANTS:
-                results[name].append((case, titles[name]))
-            print(row(case.id, [recall_at_k(titles[name], case.relevant, K) for name in VARIANTS]))
-            if WITH_RERANK:
-                time.sleep(PAUSE_SECONDS)
+    try:
+        with connect(settings.database_url) as conn:
+            print(header("recall@5"))
+            for case in positives:
+                titles = retrieved_titles(
+                    run_variants(conn, client, settings, case, vectors[case.question])
+                )
+                for name in VARIANTS:
+                    results[name].append((case, titles[name]))
+                print(
+                    row(case.id, [recall_at_k(titles[name], case.relevant, K) for name in VARIANTS])
+                )
+                if WITH_RERANK:
+                    time.sleep(PAUSE_SECONDS)
 
-        print()
-        print(header("refused"))
-        for case in negatives:
-            titles = retrieved_titles(
-                run_variants(conn, client, settings, case, vectors[case.question])
-            )
-            for name in VARIANTS:
-                results[name].append((case, titles[name]))
-            print(row(case.id, [refusal(titles[name]) for name in VARIANTS]))
-            if WITH_RERANK:
-                time.sleep(PAUSE_SECONDS)
+            print()
+            print(header("refused"))
+            for case in negatives:
+                titles = retrieved_titles(
+                    run_variants(conn, client, settings, case, vectors[case.question])
+                )
+                for name in VARIANTS:
+                    results[name].append((case, titles[name]))
+                print(row(case.id, [refusal(titles[name]) for name in VARIANTS]))
+                if WITH_RERANK:
+                    time.sleep(PAUSE_SECONDS)
+    except (errors.APIError, httpx.TimeoutException) as error:
+        print(f"\nStopped by a model error: {error}")
+        print("An incomplete run has no averages; run it again later.")
+        sys.exit(2)
 
     averages = {name: summarize(results[name], K) for name in VARIANTS}
     print()

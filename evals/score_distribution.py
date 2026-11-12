@@ -1,10 +1,10 @@
-from offers.config import Settings
+from offers.config import eval_settings
 from offers.evals import embed_questions_cached, load_cases
 from offers.llm import create_client
 from offers.store import connect, search_offers
 
 if __name__ == "__main__":
-    settings = Settings()
+    settings = eval_settings()
     client = create_client(settings)
     cases = load_cases("evals/retrieval.json")
     vectors = embed_questions_cached(

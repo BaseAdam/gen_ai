@@ -60,7 +60,7 @@ def test_judge_sees_sources_question_and_answer() -> None:
     assert f"QUESTION: {QUESTION}" in call["contents"]
     assert call["contents"].endswith("ANSWER:\nOffer [1] provides a laptop.")
     assert call["config"].response_schema is Verdict
-    assert call["config"].temperature == 0
+    assert call["config"].temperature is None
 
 
 def test_judge_answer_fails_loudly_on_invalid_response() -> None:

@@ -26,7 +26,6 @@ def build_judge_prompt(question: str, answer: RagAnswer) -> str:
 def judge_answer(client: genai.Client, question: str, answer: RagAnswer, model: str) -> Verdict:
     config = types.GenerateContentConfig(
         system_instruction=JUDGE_INSTRUCTION,
-        temperature=0,
         response_mime_type="application/json",
         response_schema=Verdict,
         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
