@@ -198,7 +198,6 @@ def run_all(
 
 
 if __name__ == "__main__":
-    pydantic_ai.BANNER_ENABLED = False
     args = parse_args()
     systems = args.systems or ALL_SYSTEMS
     if args.verbose:

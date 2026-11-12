@@ -20,7 +20,8 @@ Python 3.14 · Gemini · Postgres + pgvector · FastAPI · Pydantic AI · LangGr
   and, in-process, to the Pydantic AI and LangGraph agents.
 - **Evals**: retrieval metrics with regression thresholds, citation checks, an LLM judge
   calibrated against human labels, and agent tasks that check both the answer and the path.
-- **FastAPI app**: `/rag` (cited answers), `/ask` (tool-calling assistant), `/offers` (filters),
+- **FastAPI app**: `/agent` (the Pydantic AI agent: answer, offers, the tools used in each step
+  and token usage), `/rag` (cited answers), `/ask` (tool-calling assistant), `/offers` (filters),
   `/offers/extract` (structured data from a pasted job ad), `/offers/{index}/tips` (streamed
   interview tips). Database connections come from a pool, so a busy or missing database
   gives a 503 within 5 s instead of a hanging request.
@@ -32,12 +33,13 @@ Python 3.14 · Gemini · Postgres + pgvector · FastAPI · Pydantic AI · LangGr
 
 ```mermaid
 flowchart LR
-    question([Question]) --> agent["Agent<br/>Pydantic AI or LangGraph"]
+    cli(["CLI<br/>scripts/ask.py"]) --> agent["Agent<br/>Pydantic AI or LangGraph"]
+    api["FastAPI<br/>/agent · /rag"] -- "/agent" --> agent
     clients(["Claude Desktop<br/>MCP Inspector"]) -- "MCP (stdio)" --> mcp
     agent -- "MCP (in-process)" --> mcp["MCP server<br/>list_offers · search_job_ads · salary_stats"]
     mcp --> stats["Filters and salary stats<br/>over offers.json"]
     mcp --> search
-    api["FastAPI<br/>/rag"] --> search
+    api -- "/rag" --> search
     subgraph search [Hybrid search]
         direction TB
         vectors["Vector search<br/>pgvector HNSW"] --> fusion["RRF fusion<br/>keeps fragments from both"]
@@ -160,6 +162,8 @@ Run the API (docs at http://127.0.0.1:8000/docs):
 uv run fastapi dev src/offers/api.py
 curl -X POST http://127.0.0.1:8000/rag -H "Content-Type: application/json" \
      -d '{"question": "Which offers provide equipment for remote work?"}'
+curl -X POST http://127.0.0.1:8000/agent -H "Content-Type: application/json" \
+     -d '{"question": "Is the average salary higher in Krakow or in Warsaw?"}'
 ```
 
 Or run the API and the database in Docker (the indexing step is needed once, the data stays
@@ -243,7 +247,6 @@ Dockerfile, compose.yaml  API image; API and Postgres together
   such flip.
 - Some labels are debatable (is an intern a junior? are "work tools" equipment?); I left them
   as they are rather than tuning the key to the model.
-- The API does not expose the agents yet.
 
 Next: deployment, a React frontend and tracing with OpenTelemetry.
 

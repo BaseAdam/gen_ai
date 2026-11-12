@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from types import SimpleNamespace
 from typing import Any
@@ -11,12 +11,17 @@ from fastapi.testclient import TestClient
 from google.genai import errors, types
 from psycopg_pool import PoolTimeout
 from pydantic import SecretStr
+from pydantic_ai import ModelHTTPError, ModelTimeoutError
+from pydantic_ai.messages import ModelMessage, ModelResponse, ToolCallPart
+from pydantic_ai.models.function import AgentInfo, FunctionModel
+from pydantic_ai.usage import RequestUsage
 
 import offers.api
-from offers.api import app, get_client, get_conn, get_offers, get_settings
+from offers.api import app, get_agent_model, get_client, get_conn, get_offers, get_settings
 from offers.config import Settings
 from offers.models import Offer
 from offers.observability import current_request
+from offers.pyai_agent import ANSWER_TOOL
 from offers.store import Connection, replace_offers
 from tests.helpers import call_response, text_response, vec
 
@@ -382,12 +387,111 @@ def test_each_request_borrows_a_connection_and_gives_it_back() -> None:
     assert pool.events == ["borrow", "return"]
 
 
-def test_rag_returns_503_when_no_pooled_connection_is_free(api: TestClient) -> None:
+@pytest.mark.parametrize("path", ["/rag", "/agent"])
+def test_returns_503_when_no_pooled_connection_is_free(api: TestClient, path: str) -> None:
     def busy_pool() -> Connection:
         raise PoolTimeout("couldn't get a connection after 5.00 sec")
 
     app.dependency_overrides[get_conn] = busy_pool
 
-    response = api.post("/rag", json={"question": "Best pick?"})
+    response = api.post(path, json={"question": "Best pick?"})
 
     assert response.status_code == 503
+
+
+USAGE = RequestUsage(input_tokens=1000, output_tokens=50, output_reasoning_tokens=30)
+
+
+def tool_call(tool: str, **args: Any) -> ModelResponse:
+    return ModelResponse(parts=[ToolCallPart(tool, args)], usage=USAGE)
+
+
+def final_answer(answer: str, offers: list[str]) -> ModelResponse:
+    return tool_call(ANSWER_TOOL, answer=answer, offers=offers)
+
+
+type Respond = Callable[[list[ModelMessage], AgentInfo], ModelResponse]
+
+
+def use_agent(respond: Respond) -> None:
+    app.dependency_overrides[get_agent_model] = lambda: FunctionModel(respond)
+    app.dependency_overrides[get_conn] = lambda: "unused connection"
+
+
+def script(*responses: ModelResponse) -> Respond:
+    queue = list(responses)
+    return lambda messages, info: queue.pop(0)
+
+
+def test_agent_returns_answer_offers_steps_and_usage(api: TestClient) -> None:
+    use_agent(
+        script(tool_call("list_offers", city="Krakow"), final_answer("B is in Krakow.", ["B"]))
+    )
+
+    response = api.post("/agent", json={"question": "What is there in Krakow?"})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "answer": "B is in Krakow.",
+        "offers": [OFFERS[1].model_dump(mode="json")],
+        "steps": [["list_offers"], []],
+        "usage": {"llm_calls": 2, "input_tokens": 2000, "output_tokens": 40, "thinking_tokens": 60},
+    }
+
+
+def test_agent_returns_each_real_offer_once(
+    api: TestClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    use_agent(script(final_answer("B, B again and C.", ["B", "C", "B"])))
+
+    with caplog.at_level(logging.WARNING, logger="offers"):
+        response = api.post("/agent", json={"question": "Which offers?"})
+
+    assert [offer["title"] for offer in response.json()["offers"]] == ["B"]
+    assert "The agent named offers that do not exist: ['C']" in caplog.messages
+
+
+def test_agent_rejects_short_question_without_calling_model(api: TestClient) -> None:
+    calls: list[list[ModelMessage]] = []
+
+    def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        calls.append(messages)
+        return final_answer("Hi", [])
+
+    use_agent(respond)
+
+    response = api.post("/agent", json={"question": "?"})
+
+    assert response.status_code == 422
+    assert calls == []
+
+
+def test_agent_that_cannot_finish_returns_502(api: TestClient) -> None:
+    use_agent(lambda messages, info: tool_call("list_offers"))
+
+    response = api.post("/agent", json={"question": "Loop forever"})
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "The agent could not finish the answer"}
+
+
+@pytest.mark.parametrize(
+    ("error", "status"),
+    [
+        (ModelHTTPError(504, "test-model"), 504),
+        (ModelTimeoutError("test-model", "read timed out"), 504),
+        (ModelHTTPError(429, "test-model", body={"message": "internal detail"}), 502),
+    ],
+)
+def test_agent_model_errors_map_to_gateway_statuses(
+    api: TestClient, error: Exception, status: int
+) -> None:
+    def fail(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        raise error
+
+    use_agent(fail)
+
+    response = api.post("/agent", json={"question": "How much does B pay?"})
+
+    assert response.status_code == status
+    assert "internal detail" not in response.text

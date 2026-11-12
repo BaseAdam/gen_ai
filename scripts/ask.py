@@ -7,8 +7,6 @@ Run from the project root:
 
 import argparse
 
-import pydantic_ai
-
 from offers.config import Settings
 from offers.graph_agent import ask_graph
 from offers.io import load_offers
@@ -22,7 +20,6 @@ if __name__ == "__main__":
     parser.add_argument("question")
     parser.add_argument("--agent", choices=["pyai", "graph"], default="pyai")
     args = parser.parse_args()
-    pydantic_ai.BANNER_ENABLED = False
 
     settings = Settings()
     with connect(settings.database_url) as conn:

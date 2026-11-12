@@ -1,5 +1,6 @@
 import logging
 
+import pydantic_ai
 from google.genai import types
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ToolOutput, UsageLimits, capture_run_messages
@@ -22,6 +23,9 @@ ANSWER_INSTRUCTION = (
 )
 
 logger = logging.getLogger(__name__)
+
+# The startup banner would land in the API and eval logs (and break JSON log lines).
+pydantic_ai.BANNER_ENABLED = False
 
 
 class AgentAnswer(BaseModel):
