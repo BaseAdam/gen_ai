@@ -1,3 +1,4 @@
+import logging
 import os
 from collections.abc import Iterator
 
@@ -8,6 +9,16 @@ from offers.store import Connection, connect, create_schema
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://offers:offers@localhost:5432/offers")
 TEST_SCHEMA = "test_store"
+
+
+@pytest.fixture(autouse=True)
+def restore_app_logger() -> Iterator[None]:
+    app_logger = logging.getLogger("offers")
+    handlers, level, propagate = list(app_logger.handlers), app_logger.level, app_logger.propagate
+    yield
+    app_logger.handlers[:] = handlers
+    app_logger.setLevel(level)
+    app_logger.propagate = propagate
 
 
 @pytest.fixture

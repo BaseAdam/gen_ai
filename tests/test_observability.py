@@ -56,6 +56,7 @@ def test_configure_logging_adds_handler_only_once() -> None:
     configure_logging()
 
     assert len(logging.getLogger("offers").handlers) == 1
+    assert logging.getLogger("offers").propagate is False
 
 
 def test_log_usage_logs_token_counts(caplog: pytest.LogCaptureFixture) -> None:

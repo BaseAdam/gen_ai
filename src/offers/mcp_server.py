@@ -46,6 +46,14 @@ async def open_deps(server: MCPServer[AgentDeps]) -> AsyncIterator[AgentDeps]:
         )
 
 
+def provide_deps(deps: AgentDeps) -> Lifespan:
+    @asynccontextmanager
+    async def lifespan(server: MCPServer[AgentDeps]) -> AsyncIterator[AgentDeps]:
+        yield deps
+
+    return lifespan
+
+
 def list_offers(
     ctx: Context[AgentDeps, Any], city: City = None, remote: Remote = None, skill: Skill = None
 ) -> OfferList:
@@ -104,7 +112,7 @@ def salary_stats(
 
 
 def create_server(lifespan: Lifespan = open_deps) -> MCPServer[AgentDeps]:
-    server = MCPServer("offers", instructions=INSTRUCTIONS, lifespan=lifespan)
+    server = MCPServer("offers", instructions=INSTRUCTIONS, lifespan=lifespan, log_level="WARNING")
     for tool in (list_offers, search_job_ads, salary_stats):
         server.tool()(tool)
     return server

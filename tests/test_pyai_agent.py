@@ -1,3 +1,4 @@
+import inspect
 import logging
 from collections.abc import Callable
 from typing import Any
@@ -17,11 +18,11 @@ from pydantic_ai.messages import (
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 from pydantic_ai.usage import RequestUsage
 
-from offers import tools
+from offers import mcp_server, tools
 from offers.agent import AGENT_INSTRUCTION
 from offers.config import Settings
 from offers.models import Offer
-from offers.observability import request_context
+from offers.observability import record_tokens, request_context
 from offers.pyai_agent import (
     ANSWER_TOOL,
     MAX_MODEL_REQUESTS,
@@ -84,7 +85,7 @@ def hit(title: str, relevance: float) -> SearchHit:
     )
 
 
-def test_tools_and_output_are_declared_from_code() -> None:
+def test_tools_come_from_mcp_server_and_output_from_code() -> None:
     infos: list[AgentInfo] = []
 
     def respond(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
@@ -101,7 +102,8 @@ def test_tools_and_output_are_declared_from_code() -> None:
     assert search["required"] == ["query"]
     assert list(search["properties"]) == ["query", "city", "remote"]
     assert search["properties"]["query"]["description"].startswith("A short phrase")
-    assert declared["search_job_ads"].description.startswith("Searches the text of job ads")
+    for name, tool in declared.items():
+        assert (tool.description or "").strip() == inspect.getdoc(getattr(mcp_server, name)), name
     output = info.output_tools[0]
     assert output.name == ANSWER_TOOL == "final_result"
     assert output.parameters_json_schema["required"] == ["answer", "offers"]
@@ -130,10 +132,10 @@ def test_agent_combines_search_with_salary_stats(monkeypatch: pytest.MonkeyPatch
     assert searches == [{"query": "flexible working hours", "city": None, "remote": True}]
     [search_return] = last_request_parts(seen[1])
     assert isinstance(search_return, ToolReturnPart)
-    assert [found.title for found in search_return.content] == ["A", "B"]
+    assert [found["title"] for found in search_return.content] == ["A", "B"]
     [stats_return] = last_request_parts(seen[2])
     assert isinstance(stats_return, ToolReturnPart)
-    assert stats_return.content.average == 12000.0
+    assert stats_return.content["average"] == 12000.0
 
 
 def test_search_outage_goes_back_to_model_for_one_more_try(
@@ -155,6 +157,42 @@ def test_search_outage_goes_back_to_model_for_one_more_try(
     assert isinstance(retry, ToolReturnPart)
     assert retry.outcome == "retried"
     assert "search_job_ads is temporarily unavailable" in retry.model_response_str()
+
+
+def test_unexpected_tool_crash_reaches_model_without_details(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def broken(deps: AgentDeps, query: str, **filters: Any) -> list[SearchHit]:
+        raise RuntimeError("password=secret")
+
+    monkeypatch.setattr(tools, "search_job_ads", broken)
+    model, seen = scripted(
+        call("search_job_ads", query="mentoring for juniors"),
+        final("Search failed, please try again later.", []),
+    )
+
+    ask_agent(make_deps(), "Where will a junior get a mentor?", model=model)
+
+    [retry] = last_request_parts(seen[1])
+    assert isinstance(retry, ToolReturnPart)
+    assert retry.outcome == "retried"
+    assert "Error executing tool search_job_ads" in retry.model_response_str()
+    assert "secret" not in retry.model_response_str()
+
+
+def test_llm_calls_inside_tools_are_counted_in_the_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    def search_with_rerank(deps: AgentDeps, query: str, **filters: Any) -> list[SearchHit]:
+        record_tokens("rerank", 400, 30, 0)
+        return [hit("A", 9)]
+
+    monkeypatch.setattr(tools, "search_job_ads", search_with_rerank)
+    model, _ = scripted(call("search_job_ads", query="mentoring"), final("A.", ["A"]))
+
+    with request_context("task") as context:
+        ask_agent(make_deps(), "Mentoring?", model=model)
+
+    assert context.llm_calls == 3
+    assert len(context.steps) == 2
 
 
 def test_second_search_outage_ends_the_run(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -77,6 +77,7 @@ def configure_logging(level: int = logging.INFO, json_format: bool = False) -> N
     handler.addFilter(RequestIdFilter())
     app_logger.addHandler(handler)
     app_logger.setLevel(level)
+    app_logger.propagate = False
 
 
 def elapsed_ms(start: float) -> float:

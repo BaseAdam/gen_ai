@@ -1,18 +1,17 @@
 import asyncio
-from collections.abc import AsyncIterator, Iterator
-from contextlib import asynccontextmanager, contextmanager
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 import pytest
 from google.genai import errors
 from mcp import Client
-from mcp.server import MCPServer
 from mcp.types import CallToolResult, ListToolsResult, TextContent
 from pydantic import SecretStr
 
 from offers import mcp_server, tools
 from offers.config import Settings
-from offers.mcp_server import Lifespan, create_server
+from offers.mcp_server import create_server, provide_deps
 from offers.models import Offer
 from offers.tools import AgentDeps, SearchHit
 
@@ -39,17 +38,9 @@ def make_deps() -> AgentDeps:
     return AgentDeps(client=None, conn=None, settings=make_settings(), offers=OFFERS)  # type: ignore[arg-type]
 
 
-def fixed_deps(deps: AgentDeps) -> Lifespan:
-    @asynccontextmanager
-    async def lifespan(server: MCPServer[AgentDeps]) -> AsyncIterator[AgentDeps]:
-        yield deps
-
-    return lifespan
-
-
 def list_tools() -> ListToolsResult:
     async def scenario() -> ListToolsResult:
-        async with Client(create_server(fixed_deps(make_deps()))) as client:
+        async with Client(create_server(provide_deps(make_deps()))) as client:
             return await client.list_tools()
 
     return asyncio.run(scenario())
@@ -57,7 +48,7 @@ def list_tools() -> ListToolsResult:
 
 def call_tool(name: str, args: dict[str, Any]) -> CallToolResult:
     async def scenario() -> CallToolResult:
-        async with Client(create_server(fixed_deps(make_deps()))) as client:
+        async with Client(create_server(provide_deps(make_deps()))) as client:
             return await client.call_tool(name, args)
 
     return asyncio.run(scenario())
