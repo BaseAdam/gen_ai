@@ -20,6 +20,8 @@ Python 3.14 · Gemini · Postgres + pgvector · FastAPI · Pydantic AI · LangGr
   and, in-process, to the Pydantic AI and LangGraph agents.
 - **Evals**: retrieval metrics with regression thresholds, citation checks, an LLM judge
   calibrated against human labels, and agent tasks that check both the answer and the path.
+- **React frontend**: ask a question and see the answer, the matching offers and the agent's
+  path drawn as numbered steps with its token usage. Vite, TypeScript, Vitest.
 - **FastAPI app**: `/agent` (the Pydantic AI agent: answer, offers, the tools used in each step
   and token usage), `/rag` (cited answers), `/ask` (tool-calling assistant), `/offers` (filters),
   `/offers/extract` (structured data from a pasted job ad), `/offers/{index}/tips` (streamed
@@ -34,6 +36,7 @@ Python 3.14 · Gemini · Postgres + pgvector · FastAPI · Pydantic AI · LangGr
 ```mermaid
 flowchart LR
     cli(["CLI<br/>scripts/ask.py"]) --> agent["Agent<br/>Pydantic AI or LangGraph"]
+    ui(["React frontend"]) --> api
     api["FastAPI<br/>/agent · /rag"] -- "/agent" --> agent
     clients(["Claude Desktop<br/>MCP Inspector"]) -- "MCP (stdio)" --> mcp
     agent -- "MCP (in-process)" --> mcp["MCP server<br/>list_offers · search_job_ads · salary_stats"]
@@ -139,7 +142,7 @@ Things the evals and the debugging taught me, in the order they came up.
 
 ## Running it locally
 
-Requirements: Python 3.14, [uv](https://docs.astral.sh/uv/), Docker and a
+Requirements: Python 3.14, [uv](https://docs.astral.sh/uv/), Node.js 22+, Docker and a
 [Gemini API key](https://aistudio.google.com/apikey).
 
 ```bash
@@ -164,6 +167,14 @@ curl -X POST http://127.0.0.1:8000/rag -H "Content-Type: application/json" \
      -d '{"question": "Which offers provide equipment for remote work?"}'
 curl -X POST http://127.0.0.1:8000/agent -H "Content-Type: application/json" \
      -d '{"question": "Is the average salary higher in Krakow or in Warsaw?"}'
+```
+
+Run the frontend (with the API running on port 8000, Vite forwards the API calls to it):
+
+```bash
+cd frontend
+npm install
+npm run dev                               # http://localhost:5173
 ```
 
 Or run the API and the database in Docker (the indexing step is needed once, the data stays
@@ -200,6 +211,7 @@ For Claude Desktop, add the server to its config file:
 ```bash
 uv run pytest                    # tests that need Postgres are skipped when it is not running
 uv run ruff check . && uv run mypy
+cd frontend && npm run lint && npm test && npm run build
 
 uv run python evals/run_retrieval.py --rerank           # exit code 1 = regression, 2 = interrupted
 uv run python evals/run_agent.py pyai graph --repeat 3  # agent tasks with pass^k
@@ -208,9 +220,10 @@ uv run python evals/calibrate_judge.py                  # judge vs human labels
 ```
 
 GitHub Actions runs format, lint, types and the whole test suite (with Postgres, so the BM25
-retrieval gate is included) on every push, and builds the Docker image and checks that the API
-in it answers. The retrieval eval with the reranker calls Gemini,
-so it is a separate workflow started by hand; it needs a `GEMINI_API_KEY` repository secret.
+retrieval gate is included) on every push. It also builds the Docker image and checks that the
+API in it answers, and lints, tests and builds the frontend. The retrieval eval with the
+reranker calls Gemini, so it is a separate workflow started by hand; it needs a
+`GEMINI_API_KEY` repository secret.
 
 The evals call Gemini many times; on the free tier a full agent run takes several minutes. They
 use a 90 s model timeout (the API keeps 30 s, because a user is waiting), and the agent eval
@@ -234,6 +247,7 @@ src/offers/
 evals/     datasets, thresholds and eval scripts
 scripts/   indexing, data generation, asking an agent
 tests/     pytest suite
+frontend/  React app (Vite, TypeScript)
 scratch/   learning experiments, not part of the app
 Dockerfile, compose.yaml  API image; API and Postgres together
 ```
@@ -248,7 +262,7 @@ Dockerfile, compose.yaml  API image; API and Postgres together
 - Some labels are debatable (is an intern a junior? are "work tools" equipment?); I left them
   as they are rather than tuning the key to the model.
 
-Next: deployment, a React frontend and tracing with OpenTelemetry.
+Next: deployment and tracing with OpenTelemetry.
 
 ## License
 

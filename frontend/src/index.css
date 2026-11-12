@@ -1,0 +1,384 @@
+:root {
+  --paper: #f4f6f9;
+  --surface: #ffffff;
+  --ink: #1a2238;
+  --muted: #596179;
+  --line: #d6dbe4;
+  --marker: #ffe45c;
+  --on-marker: #1a2238;
+  --highlight: #ffe45c;
+  --signal: #2d5be3;
+  --danger: #b42318;
+
+  --font-text: 'Schibsted Grotesk Variable', system-ui, sans-serif;
+  --font-code: 'IBM Plex Mono', ui-monospace, monospace;
+
+  color-scheme: light dark;
+  font-family: var(--font-text);
+  font-size: 106.25%; /* 17px */
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #121725;
+    --surface: #1a2133;
+    --ink: #e8ecf4;
+    --muted: #a0a8bc;
+    --line: #2f3850;
+    --highlight: rgb(255 228 92 / 0.32);
+    --signal: #8aa8ff;
+    --danger: #ff8a7a;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol {
+  margin: 0;
+}
+
+a {
+  color: var(--signal);
+}
+
+:focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.page {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 3.5rem 1rem 2.5rem;
+}
+
+/* Intro */
+
+.intro h1 {
+  font-size: clamp(2.1rem, 6vw, 3.1rem);
+  font-weight: 750;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.intro p {
+  margin-top: 1rem;
+  max-width: 38rem;
+  color: var(--muted);
+}
+
+/* Question */
+
+.ask {
+  margin-top: 2.5rem;
+}
+
+.ask label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.ask-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ask input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.8rem 1rem;
+  font: inherit;
+  color: inherit;
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+}
+
+.ask input::placeholder {
+  color: var(--muted);
+}
+
+.ask button {
+  padding: 0 1.6rem;
+  font: inherit;
+  font-weight: 650;
+  color: var(--on-marker);
+  background: var(--marker);
+  border: 2px solid var(--on-marker);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.ask button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Example questions */
+
+.examples {
+  margin-top: 1.25rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.examples ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 0.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.examples button {
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.examples button:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.examples button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Result */
+
+.result {
+  margin-top: 3rem;
+  display: grid;
+  gap: 2.5rem;
+}
+
+.result h2 {
+  font-size: 1.05rem;
+  font-weight: 650;
+  margin-bottom: 0.6rem;
+}
+
+.status {
+  color: var(--muted);
+}
+
+.error {
+  padding: 0.9rem 1rem;
+  color: var(--danger);
+  border: 2px solid currentColor;
+  border-radius: 10px;
+}
+
+.answer {
+  font-size: 1.15rem;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+/* Offers */
+
+.offers {
+  list-style: none;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.offer {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.offer-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+}
+
+.offer h3 {
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+.offer mark {
+  color: inherit;
+  background: linear-gradient(transparent 58%, var(--highlight) 58%);
+  padding: 0 0.1em;
+}
+
+.salary {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.company {
+  color: var(--muted);
+}
+
+.remote {
+  margin-left: 0.6rem;
+  padding: 0 0.45rem;
+  font-size: 0.8rem;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.skills {
+  margin-top: 0.2rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+/* The agent's path, drawn as a route with one stop per step */
+
+.route {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  counter-reset: stop;
+}
+
+.stop {
+  position: relative;
+  flex: 1;
+  padding-top: 2.4rem;
+  padding-right: 1rem;
+  counter-increment: stop;
+  animation: stop-in 0.35s ease-out both;
+  animation-delay: calc(var(--stop) * 140ms);
+}
+
+/* The line to the next stop */
+.stop:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 0.8rem;
+  left: 1.6rem;
+  right: 0;
+  height: 3px;
+  background: var(--ink);
+}
+
+/* The stop itself, numbered */
+.stop::before {
+  content: counter(stop);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--on-marker);
+  background: var(--marker);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+
+.stop-text {
+  display: block;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.stop-text + .stop-text {
+  margin-top: 0.4rem;
+}
+
+.stop code {
+  display: block;
+  font-family: var(--font-code);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.usage {
+  margin-top: 1.2rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+@keyframes stop-in {
+  from {
+    opacity: 0;
+    transform: translateX(-0.5rem);
+  }
+}
+
+@media (max-width: 34rem) {
+  .page {
+    padding-top: 2rem;
+  }
+
+  .ask-row {
+    flex-direction: column;
+  }
+
+  .ask button {
+    padding: 0.75rem;
+  }
+
+  .offer-head {
+    flex-direction: column;
+  }
+
+  .route {
+    flex-direction: column;
+  }
+
+  .stop {
+    padding: 0.15rem 0 1.4rem 2.6rem;
+  }
+
+  .stop:not(:last-child)::after {
+    top: 1.6rem;
+    bottom: 0;
+    left: calc(0.8rem - 1.5px);
+    right: auto;
+    width: 3px;
+    height: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stop {
+    animation: none;
+  }
+}
+
+.footer {
+  margin-top: 4rem;
+  padding-top: 1.2rem;
+  font-size: 0.875rem;
+  border-top: 1px solid var(--line);
+}
