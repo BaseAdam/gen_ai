@@ -1,0 +1,45 @@
+name: Retrieval eval
+
+# Calls Gemini (about 25 requests: embeddings for indexing and the questions, then the
+# reranker), so it runs only on demand. Needs the GEMINI_API_KEY repository secret.
+on:
+  workflow_dispatch:
+
+jobs:
+  retrieval:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: offers
+          POSTGRES_PASSWORD: offers
+          POSTGRES_DB: offers
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U offers"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: gemini-3.5-flash-lite
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Index the offers
+        run: uv run python scripts/index_offers.py
+
+      - name: Retrieval metrics against the thresholds
+        run: uv run python evals/run_retrieval.py --rerank

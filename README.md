@@ -1,5 +1,7 @@
 # Job Offers AI
 
+[![CI](https://github.com/BaseAdam/job-offers-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/BaseAdam/job-offers-ai/actions/workflows/ci.yml)
+
 An LLM application that answers questions about a set of job offers, built to learn and
 show AI engineering end to end: hybrid retrieval with reranking, evaluation of retrieval,
 answers and agents, request-level observability, and three versions of the same agent
@@ -188,6 +190,10 @@ uv run python evals/generate_answers.py                 # then check_citations.p
 uv run python evals/calibrate_judge.py                  # judge vs human labels
 ```
 
+GitHub Actions runs format, lint, types and the whole test suite (with Postgres, so the BM25
+retrieval gate is included) on every push. The retrieval eval with the reranker calls Gemini,
+so it is a separate workflow started by hand; it needs a `GEMINI_API_KEY` repository secret.
+
 The evals call Gemini many times; on the free tier a full agent run takes several minutes. They
 use a 90 s model timeout (the API keeps 30 s, because a user is waiting), and the agent eval
 stops with a partial summary when the daily quota runs out.
@@ -224,8 +230,7 @@ scratch/   learning experiments, not part of the app
   as they are rather than tuning the key to the model.
 - The API does not expose the agents yet.
 
-Next: CI with GitHub Actions, a Docker image for the API, deployment, a React frontend and
-tracing with OpenTelemetry.
+Next: a Docker image for the API, deployment, a React frontend and tracing with OpenTelemetry.
 
 ## License
 

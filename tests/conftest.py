@@ -26,6 +26,8 @@ def conn() -> Iterator[Connection]:
     try:
         connection = connect(DATABASE_URL)
     except psycopg.OperationalError:
+        if os.environ.get("CI"):
+            raise  # in CI a missing database is a failure, not a reason to skip
         pytest.skip("Postgres is not running")
 
     connection.execute("CREATE EXTENSION IF NOT EXISTS vector")
