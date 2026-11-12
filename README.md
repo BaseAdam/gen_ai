@@ -29,8 +29,10 @@ Python 3.14 · Gemini · Postgres + pgvector · FastAPI · Pydantic AI · LangGr
   gives a 503 within 5 s instead of a hanging request.
 - **Docker**: one multi-stage image that builds the React app with npm and the API with uv
   (dependencies in their own cached layers, no dev tools, non-root user); FastAPI serves the
-  built frontend. A compose file runs it together with Postgres.
-- **Observability**: per-request IDs, step timings and token counts in the logs (text or JSON).
+  built frontend. A compose file runs it together with Postgres and Jaeger.
+- **Observability**: per-request IDs, step timings and token counts in the logs (text or JSON),
+  and OpenTelemetry traces in Jaeger: one trace per request, from the HTTP call through the
+  agent run, every model call and every MCP tool call down to the search steps inside a tool.
 
 ## Architecture
 
@@ -207,6 +209,24 @@ For Claude Desktop, add the server to its config file:
 }
 ```
 
+### Tracing
+
+Compose also starts Jaeger, and the API container sends its traces there. Ask a question, then
+open http://127.0.0.1:16686 and pick the `job-offers-ai` service. With `LOG_JSON=true` every
+log line carries its `trace_id`, so a log line leads to its trace.
+
+FastAPI exports traces when an OTLP endpoint is set in the environment. To trace the API
+running outside Docker (PowerShell; these variables go in the shell, not in `.env`):
+
+```powershell
+docker compose up -d db jaeger
+$env:OTEL_SERVICE_NAME = "job-offers-ai"
+$env:OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = "http://localhost:4318/v1/traces"
+uv run fastapi dev src/offers/api.py
+```
+
+Any backend that accepts OTLP over HTTP works the same way.
+
 ### Tests and evals
 
 ```bash
@@ -263,7 +283,7 @@ Dockerfile, compose.yaml  API image; API and Postgres together
 - Some labels are debatable (is an intern a junior? are "work tools" equipment?); I left them
   as they are rather than tuning the key to the model.
 
-Next: deployment and tracing with OpenTelemetry.
+Next: deployment.
 
 ## License
 

@@ -4,6 +4,7 @@ import pydantic_ai
 from google.genai import types
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, ToolOutput, UsageLimits, capture_run_messages
+from pydantic_ai.capabilities import Instrumentation
 from pydantic_ai.mcp import MCPToolset
 from pydantic_ai.messages import ModelMessage, ModelResponse, ToolCallPart
 from pydantic_ai.models import Model
@@ -38,6 +39,9 @@ class AgentAnswer(BaseModel):
 offers_agent = Agent(
     output_type=ToolOutput(AgentAnswer, name=ANSWER_TOOL),
     instructions=ANSWER_INSTRUCTION,
+    # OpenTelemetry spans for the run, every model call and every tool call. They cost nothing
+    # until a tracer provider is set (FastAPI sets one when an OTLP endpoint is configured).
+    capabilities=[Instrumentation()],
 )
 
 

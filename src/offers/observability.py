@@ -9,12 +9,14 @@ from datetime import UTC, datetime
 from typing import Any
 
 from google.genai import types
+from opentelemetry import trace
 
 LOG_FORMAT = "%(asctime)s %(levelname)s [%(request_id)s] %(name)s: %(message)s"
 
 STANDARD_RECORD_FIELDS = set(vars(logging.makeLogRecord({}))) | {"message", "asctime"}
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer("offers")
 
 
 @dataclass
@@ -45,9 +47,13 @@ def request_context(request_id: str) -> Iterator[RequestContext]:
 
 
 class RequestIdFilter(logging.Filter):
+    """Adds the request ID and, when tracing is on, the trace ID, so logs lead to their trace."""
+
     def filter(self, record: logging.LogRecord) -> bool:
         context = current_request.get()
         record.request_id = context.request_id if context else "-"
+        span = trace.get_current_span().get_span_context()
+        record.trace_id = format(span.trace_id, "032x") if span.is_valid else "-"
         return True
 
 
@@ -58,6 +64,7 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "request_id": getattr(record, "request_id", "-"),
+            "trace_id": getattr(record, "trace_id", "-"),
             "message": record.getMessage(),
         }
         for key, value in vars(record).items():
@@ -86,26 +93,28 @@ def elapsed_ms(start: float) -> float:
 
 @contextmanager
 def timed(step: str) -> Iterator[None]:
+    """Logs how long a step took and traces it as a span (a no-op until tracing is configured)."""
     start = time.perf_counter()
-    try:
-        yield
-    except Exception as error:
+    with tracer.start_as_current_span(step):
+        try:
+            yield
+        except Exception as error:
+            duration = elapsed_ms(start)
+            logger.error(
+                "%s failed after %.0f ms: %r",
+                step,
+                duration,
+                error,
+                extra={"step": step, "duration_ms": round(duration), "error": repr(error)},
+            )
+            raise
         duration = elapsed_ms(start)
-        logger.error(
-            "%s failed after %.0f ms: %r",
+        logger.info(
+            "%s took %.0f ms",
             step,
             duration,
-            error,
-            extra={"step": step, "duration_ms": round(duration), "error": repr(error)},
+            extra={"step": step, "duration_ms": round(duration)},
         )
-        raise
-    duration = elapsed_ms(start)
-    logger.info(
-        "%s took %.0f ms",
-        step,
-        duration,
-        extra={"step": step, "duration_ms": round(duration)},
-    )
 
 
 def record_tokens(
@@ -118,6 +127,17 @@ def record_tokens(
         output_tokens,
         thinking_tokens,
         extra={
+            "step": step,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "thinking_tokens": thinking_tokens,
+            "llm_calls": calls,
+        },
+    )
+    # An event rather than attributes: one span can record several model calls.
+    trace.get_current_span().add_event(
+        "llm.usage",
+        {
             "step": step,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,

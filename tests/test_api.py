@@ -11,6 +11,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from google.genai import errors, types
+from opentelemetry.sdk.trace import ReadableSpan
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from psycopg_pool import PoolTimeout
 from pydantic import SecretStr
 from pydantic_ai import ModelHTTPError, ModelTimeoutError
@@ -19,6 +21,7 @@ from pydantic_ai.models.function import AgentInfo, FunctionModel
 from pydantic_ai.usage import RequestUsage
 
 import offers.api
+from offers import tools
 from offers.api import (
     app,
     get_agent_model,
@@ -26,14 +29,15 @@ from offers.api import (
     get_conn,
     get_offers,
     get_settings,
-    mount_frontend,
+    serve_frontend,
 )
 from offers.config import Settings
 from offers.models import Offer
-from offers.observability import current_request
+from offers.observability import current_request, timed
 from offers.pyai_agent import ANSWER_TOOL
 from offers.store import Connection, replace_offers
-from tests.helpers import call_response, text_response, vec
+from offers.tools import AgentDeps, SearchHit
+from tests.helpers import call_response, hit, text_response, vec
 
 OFFERS = [
     Offer(title="A", company="X", city="Warsaw", salary_min=10000, salary_max=20000),
@@ -509,12 +513,12 @@ def test_agent_model_errors_map_to_gateway_statuses(
 
 def app_with_frontend(directory: Path) -> TestClient:
     frontend_app = FastAPI()
+    serve_frontend(frontend_app, directory)
 
     @frontend_app.get("/offers")
     def offers() -> list[str]:
         return ["A"]
 
-    mount_frontend(frontend_app, directory)
     return TestClient(frontend_app)
 
 
@@ -533,6 +537,7 @@ def test_serves_the_built_frontend_next_to_the_api(tmp_path: Path) -> None:
     assert script.text == "console.log('hi')"
     assert client.get("/offers").json() == ["A"]
     assert client.get("/missing.js").status_code == 404
+    assert client.get("/agentt", headers={"accept": "application/json"}).status_code == 404
 
 
 def test_without_a_frontend_build_only_the_api_is_served(tmp_path: Path) -> None:
@@ -540,3 +545,39 @@ def test_without_a_frontend_build_only_the_api_is_served(tmp_path: Path) -> None
 
     assert client.get("/").status_code == 404
     assert client.get("/offers").json() == ["A"]
+
+
+def ancestors(span: ReadableSpan, spans: tuple[ReadableSpan, ...]) -> list[str]:
+    by_id = {other.context.span_id: other for other in spans}
+    names = []
+    while span.parent is not None:
+        span = by_id[span.parent.span_id]
+        names.append(span.name)
+    return names
+
+
+def test_agent_request_is_one_trace_down_to_the_search_inside_the_tool(
+    api: TestClient, spans: InMemorySpanExporter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def search(deps: AgentDeps, query: str, **filters: Any) -> list[SearchHit]:
+        with timed("rag.search"):
+            return [hit("B", 9)]
+
+    monkeypatch.setattr(tools, "search_job_ads", search)
+    use_agent(script(tool_call("search_job_ads", query="mentor"), final_answer("B.", ["B"])))
+
+    api.post("/agent", json={"question": "Where will I get a mentor?"})
+
+    finished = spans.get_finished_spans()
+    assert len({span.context.trace_id for span in finished}) == 1
+    [search_span] = [span for span in finished if span.name == "rag.search"]
+    path = ancestors(search_span, finished)
+    expected = [
+        "execute_tool search_job_ads",
+        "invoke_agent offers_agent",
+        "pyai.run",
+        "POST /agent",
+    ]
+    assert [name for name in path if name in expected] == expected
+    [run] = [span for span in finished if span.name == "pyai.run"]
+    assert [event.name for event in run.events] == ["llm.usage"]

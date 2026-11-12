@@ -4,6 +4,8 @@ import time
 
 import pytest
 from google.genai import types
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from opentelemetry.trace import StatusCode
 
 from offers.observability import (
     JsonFormatter,
@@ -111,6 +113,7 @@ def test_request_id_filter_marks_logs_outside_requests() -> None:
     RequestIdFilter().filter(record)
 
     assert record.request_id == "-"
+    assert record.trace_id == "-"
 
 
 def test_configured_handler_fills_request_id() -> None:
@@ -175,6 +178,7 @@ def test_json_formatter_puts_extra_fields_next_to_message() -> None:
             "step": "rag.embed",
             "duration_ms": 312,
             "request_id": "abc123",
+            "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
         }
     )
 
@@ -183,6 +187,7 @@ def test_json_formatter_puts_extra_fields_next_to_message() -> None:
     assert data["level"] == "INFO"
     assert data["logger"] == "offers.observability"
     assert data["request_id"] == "abc123"
+    assert data["trace_id"] == "4bf92f3577b34da6a3ce929d0e0e4736"
     assert data["message"] == "rag.embed took 312 ms"
     assert data["step"] == "rag.embed"
     assert data["duration_ms"] == 312
@@ -223,3 +228,49 @@ def test_record_step_outside_a_request_only_logs(caplog: pytest.LogCaptureFixtur
         record_step("agent", [("list_offers", {})])
 
     assert caplog.messages == ["agent calls list_offers({})"]
+
+
+def test_timed_traces_each_step_as_a_nested_span(spans: InMemorySpanExporter) -> None:
+    with timed("rag.search"), timed("rag.rerank"):
+        pass
+
+    rerank, search = spans.get_finished_spans()
+    assert (rerank.name, search.name) == ("rag.rerank", "rag.search")
+    assert rerank.parent is not None and rerank.parent.span_id == search.context.span_id
+
+
+def test_timed_marks_a_failed_step_on_its_span(spans: InMemorySpanExporter) -> None:
+    with pytest.raises(ValueError), timed("rag.generate"):
+        raise ValueError("boom")
+
+    [span] = spans.get_finished_spans()
+    assert span.status.status_code is StatusCode.ERROR
+    assert [event.name for event in span.events] == ["exception"]
+
+
+def test_record_tokens_adds_a_usage_event_to_the_current_span(
+    spans: InMemorySpanExporter,
+) -> None:
+    with timed("rag.rerank"):
+        record_tokens("rerank", 400, 30, 5)
+
+    [span] = spans.get_finished_spans()
+    [event] = span.events
+    assert event.name == "llm.usage"
+    assert dict(event.attributes or {}) == {
+        "step": "rerank",
+        "input_tokens": 400,
+        "output_tokens": 30,
+        "thinking_tokens": 5,
+        "llm_calls": 1,
+    }
+
+
+def test_logs_inside_a_span_carry_its_trace_id(spans: InMemorySpanExporter) -> None:
+    record = make_record()
+
+    with timed("rag.search"):
+        RequestIdFilter().filter(record)
+
+    [span] = spans.get_finished_spans()
+    assert record.trace_id == format(span.context.trace_id, "032x")

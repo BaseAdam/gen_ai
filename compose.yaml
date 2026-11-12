@@ -20,11 +20,21 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://offers:offers@db:5432/offers
+      OTEL_SERVICE_NAME: job-offers-ai
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4318/v1/traces
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
+      jaeger:
+        condition: service_started
+
+  jaeger:
+    image: jaegertracing/jaeger:2.23.0
+    ports:
+      - "16686:16686" # web UI
+      - "4318:4318" # OTLP over HTTP, for an API running outside Docker
 
 volumes:
   pgdata:
