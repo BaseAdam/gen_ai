@@ -22,7 +22,10 @@ Python 3.14 · Gemini · Postgres + pgvector · FastAPI · Pydantic AI · LangGr
   calibrated against human labels, and agent tasks that check both the answer and the path.
 - **FastAPI app**: `/rag` (cited answers), `/ask` (tool-calling assistant), `/offers` (filters),
   `/offers/extract` (structured data from a pasted job ad), `/offers/{index}/tips` (streamed
-  interview tips).
+  interview tips). Database connections come from a pool, so a busy or missing database
+  gives a 503 within 5 s instead of a hanging request.
+- **Docker**: a multi-stage image built with uv (dependencies in their own cached layer, no dev
+  tools, non-root user) and a compose file that runs the API together with Postgres.
 - **Observability**: per-request IDs, step timings and token counts in the logs (text or JSON).
 
 ## Architecture
@@ -138,7 +141,7 @@ Requirements: Python 3.14, [uv](https://docs.astral.sh/uv/), Docker and a
 [Gemini API key](https://aistudio.google.com/apikey).
 
 ```bash
-docker compose up -d                      # Postgres with pgvector
+docker compose up -d db                   # Postgres with pgvector
 cp .env.example .env                      # then set GEMINI_API_KEY
 uv sync
 uv run python scripts/index_offers.py     # chunk, embed and store the offers
@@ -158,6 +161,16 @@ uv run fastapi dev src/offers/api.py
 curl -X POST http://127.0.0.1:8000/rag -H "Content-Type: application/json" \
      -d '{"question": "Which offers provide equipment for remote work?"}'
 ```
+
+Or run the API and the database in Docker (the indexing step is needed once, the data stays
+in a volume):
+
+```bash
+docker compose up --build -d
+docker compose run --rm api python scripts/index_offers.py
+```
+
+Compose reads `.env` but points `DATABASE_URL` at the `db` service.
 
 Use the tools from an MCP client:
 
@@ -191,7 +204,8 @@ uv run python evals/calibrate_judge.py                  # judge vs human labels
 ```
 
 GitHub Actions runs format, lint, types and the whole test suite (with Postgres, so the BM25
-retrieval gate is included) on every push. The retrieval eval with the reranker calls Gemini,
+retrieval gate is included) on every push, and builds the Docker image and checks that the API
+in it answers. The retrieval eval with the reranker calls Gemini,
 so it is a separate workflow started by hand; it needs a `GEMINI_API_KEY` repository secret.
 
 The evals call Gemini many times; on the free tier a full agent run takes several minutes. They
@@ -217,6 +231,7 @@ evals/     datasets, thresholds and eval scripts
 scripts/   indexing, data generation, asking an agent
 tests/     pytest suite
 scratch/   learning experiments, not part of the app
+Dockerfile, compose.yaml  API image; API and Postgres together
 ```
 
 ## Limitations and next steps
@@ -230,7 +245,7 @@ scratch/   learning experiments, not part of the app
   as they are rather than tuning the key to the model.
 - The API does not expose the agents yet.
 
-Next: a Docker image for the API, deployment, a React frontend and tracing with OpenTelemetry.
+Next: deployment, a React frontend and tracing with OpenTelemetry.
 
 ## License
 

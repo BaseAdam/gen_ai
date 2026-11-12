@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterator
+from contextlib import contextmanager
 from types import SimpleNamespace
 from typing import Any
 
@@ -8,6 +9,7 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 from google.genai import errors, types
+from psycopg_pool import PoolTimeout
 from pydantic import SecretStr
 
 import offers.api
@@ -186,6 +188,15 @@ def test_model_deadline_returns_504(api: TestClient, fake_client: FakeClient) ->
     assert response.json() == {"detail": "The model did not respond in time"}
 
 
+def test_unreachable_model_returns_502(api: TestClient, fake_client: FakeClient) -> None:
+    fake_client.models.error = httpx.ConnectError("connection refused")
+
+    response = api.post("/ask", json={"question": "How much do they pay in Warsaw?"})
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Model service error"}
+
+
 def test_model_error_returns_502_without_details(api: TestClient, fake_client: FakeClient) -> None:
     body = {"error": {"code": 503, "message": "internal detail", "status": "UNAVAILABLE"}}
     fake_client.models.error = errors.APIError(503, body)
@@ -304,18 +315,79 @@ def test_request_summary_includes_tokens_used_by_endpoint(
     assert summary.endswith(", tokens: input=700 output=100 thinking=20")
 
 
-def test_startup_configures_logging_from_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+class FakePool:
+    instances: list[FakePool] = []
+
+    @staticmethod
+    def check_connection(conn: object) -> None:
+        pass
+
+    def __init__(self, conninfo: str, **options: Any) -> None:
+        self.conninfo = conninfo
+        self.options = options
+        self.events: list[str] = []
+        FakePool.instances.append(self)
+
+    def __enter__(self) -> FakePool:
+        self.events.append("open")
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.events.append("close")
+
+    @contextmanager
+    def connection(self) -> Iterator[str]:
+        self.events.append("borrow")
+        try:
+            yield "pooled connection"
+        finally:
+            self.events.append("return")
+
+
+def test_startup_configures_logging_and_opens_the_pool(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings(
         gemini_api_key=SecretStr("test-key"),
         gemini_model="test-model",
         log_json=True,
+        database_url="postgresql://user:pass@db:5432/offers",
         _env_file=None,
     )
     calls: list[dict[str, Any]] = []
+    FakePool.instances.clear()
     monkeypatch.setattr(offers.api, "get_settings", lambda: settings)
     monkeypatch.setattr(offers.api, "configure_logging", lambda **kwargs: calls.append(kwargs))
+    monkeypatch.setattr(offers.api, "ConnectionPool", FakePool)
 
     with TestClient(app):
-        pass
+        [pool] = FakePool.instances
+        assert pool.events == ["open"]
 
     assert calls == [{"json_format": True}]
+    assert pool.conninfo == "postgresql://user:pass@db:5432/offers"
+    assert pool.options["max_size"] == offers.api.POOL_MAX_SIZE
+    assert pool.options["check"] is FakePool.check_connection
+    assert pool.events == ["open", "close"]
+
+
+def test_each_request_borrows_a_connection_and_gives_it_back() -> None:
+    pool = FakePool("conninfo")
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(pool=pool)))
+
+    dependency = get_conn(request)  # type: ignore[arg-type]
+    assert next(dependency) == "pooled connection"
+    assert pool.events == ["borrow"]
+    with pytest.raises(StopIteration):
+        next(dependency)
+
+    assert pool.events == ["borrow", "return"]
+
+
+def test_rag_returns_503_when_no_pooled_connection_is_free(api: TestClient) -> None:
+    def busy_pool() -> Connection:
+        raise PoolTimeout("couldn't get a connection after 5.00 sec")
+
+    app.dependency_overrides[get_conn] = busy_pool
+
+    response = api.post("/rag", json={"question": "Best pick?"})
+
+    assert response.status_code == 503

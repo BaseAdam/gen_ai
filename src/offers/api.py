@@ -12,6 +12,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 from google import genai
 from google.genai import errors
+from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field
 
 from offers.analysis import filter_offers
@@ -22,9 +23,12 @@ from offers.llm import convert_offer_text_to_structure, create_client, stream_in
 from offers.models import Offer, RagAnswer
 from offers.observability import configure_logging, elapsed_ms, request_context
 from offers.rag import answer_with_rag
-from offers.store import Connection, connect
+from offers.store import Connection
 
 logger = logging.getLogger(__name__)
+
+POOL_MAX_SIZE = 10
+POOL_TIMEOUT_SECONDS = 5.0
 
 
 @lru_cache
@@ -34,8 +38,19 @@ def get_settings() -> Settings:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    configure_logging(json_format=get_settings().log_json)
-    yield
+    settings = get_settings()
+    configure_logging(json_format=settings.log_json)
+    pool = ConnectionPool(
+        settings.database_url,
+        min_size=1,
+        max_size=POOL_MAX_SIZE,
+        timeout=POOL_TIMEOUT_SECONDS,
+        check=ConnectionPool.check_connection,
+        open=False,
+    )
+    with pool:
+        app.state.pool = pool
+        yield
 
 
 app = FastAPI(title="Offers API", lifespan=lifespan)
@@ -78,6 +93,11 @@ def handle_timeout(request: Request, exc: httpx.TimeoutException) -> JSONRespons
     return JSONResponse(status_code=504, content={"detail": "The model did not respond in time"})
 
 
+@app.exception_handler(httpx.TransportError)
+def handle_transport_error(request: Request, exc: httpx.TransportError) -> JSONResponse:
+    return JSONResponse(status_code=502, content={"detail": "Model service error"})
+
+
 @app.exception_handler(errors.APIError)
 def handle_api_error(request: Request, exc: errors.APIError) -> JSONResponse:
     if exc.code == 504:
@@ -104,8 +124,9 @@ def get_offers() -> list[Offer]:
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 
-def get_conn(settings: SettingsDep) -> Iterator[Connection]:
-    with connect(settings.database_url) as conn:
+def get_conn(request: Request) -> Iterator[Connection]:
+    pool: ConnectionPool[Connection] = request.app.state.pool
+    with pool.connection() as conn:
         yield conn
 
 

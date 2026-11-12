@@ -44,3 +44,25 @@ jobs:
 
       - name: Tests (including the BM25 retrieval gate)
         run: uv run pytest
+
+  image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build the image
+        run: docker build -t job-offers-ai .
+
+      - name: Start the API (no database or real key needed for /offers)
+        run: >-
+          docker run -d --name api -p 8000:8000
+          -e GEMINI_API_KEY=dummy -e GEMINI_MODEL=gemini-3.5-flash-lite
+          job-offers-ai
+
+      - name: Smoke test
+        run: curl --retry 10 --retry-connrefused --retry-delay 1 -fsS http://127.0.0.1:8000/offers > /dev/null
+
+      - name: API logs
+        if: always()
+        run: docker logs api
