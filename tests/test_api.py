@@ -1,12 +1,14 @@
 import logging
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import httpx
 import psycopg
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from google.genai import errors, types
 from psycopg_pool import PoolTimeout
@@ -17,7 +19,15 @@ from pydantic_ai.models.function import AgentInfo, FunctionModel
 from pydantic_ai.usage import RequestUsage
 
 import offers.api
-from offers.api import app, get_agent_model, get_client, get_conn, get_offers, get_settings
+from offers.api import (
+    app,
+    get_agent_model,
+    get_client,
+    get_conn,
+    get_offers,
+    get_settings,
+    mount_frontend,
+)
 from offers.config import Settings
 from offers.models import Offer
 from offers.observability import current_request
@@ -495,3 +505,38 @@ def test_agent_model_errors_map_to_gateway_statuses(
 
     assert response.status_code == status
     assert "internal detail" not in response.text
+
+
+def app_with_frontend(directory: Path) -> TestClient:
+    frontend_app = FastAPI()
+
+    @frontend_app.get("/offers")
+    def offers() -> list[str]:
+        return ["A"]
+
+    mount_frontend(frontend_app, directory)
+    return TestClient(frontend_app)
+
+
+def test_serves_the_built_frontend_next_to_the_api(tmp_path: Path) -> None:
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "index.html").write_text('<div id="root"></div>')
+    (tmp_path / "assets" / "app.js").write_text("console.log('hi')")
+    client = app_with_frontend(tmp_path)
+
+    page = client.get("/")
+    script = client.get("/assets/app.js")
+
+    assert page.status_code == 200
+    assert page.text == '<div id="root"></div>'
+    assert page.headers["content-type"].startswith("text/html")
+    assert script.text == "console.log('hi')"
+    assert client.get("/offers").json() == ["A"]
+    assert client.get("/missing.js").status_code == 404
+
+
+def test_without_a_frontend_build_only_the_api_is_served(tmp_path: Path) -> None:
+    client = app_with_frontend(tmp_path / "dist")
+
+    assert client.get("/").status_code == 404
+    assert client.get("/offers").json() == ["A"]

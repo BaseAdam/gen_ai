@@ -4,12 +4,14 @@ import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from contextlib import asynccontextmanager
 from functools import lru_cache
+from pathlib import Path
 from typing import Annotated
 
 import httpx
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from google import genai
 from google.genai import errors
 from psycopg_pool import ConnectionPool
@@ -33,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 POOL_MAX_SIZE = 10
 POOL_TIMEOUT_SECONDS = 5.0
+FRONTEND_DIR = Path("frontend/dist")
 
 
 @lru_cache
@@ -275,3 +278,13 @@ def agent(request: AskRequest, deps: AgentDepsDep, model: AgentModelDep) -> Agen
             thinking_tokens=context.thinking_tokens,
         ),
     )
+
+
+def mount_frontend(app: FastAPI, directory: Path) -> None:
+    """Serves the built React app at / if it has been built (npm run build, or the Docker image)."""
+    if directory.is_dir():
+        app.mount("/", StaticFiles(directory=directory, html=True), name="frontend")
+
+
+# Last, after every API route: routes are matched in order, so the API paths take precedence.
+mount_frontend(app, FRONTEND_DIR)

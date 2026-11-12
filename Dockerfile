@@ -1,3 +1,11 @@
+# Frontend stage: npm builds the React app into static files.
+FROM node:24-slim AS frontend
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
+COPY frontend ./
+RUN npm run build
+
 # Build stage: uv installs the dependencies and the app into a virtual environment.
 FROM python:3.14-slim AS build
 COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /bin/uv
@@ -15,11 +23,13 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-editable
 
-# Runtime stage: Python, the virtual environment and the data, without uv or the sources.
+# Runtime stage: Python, the virtual environment, the data and the built frontend, without uv,
+# Node or the sources.
 FROM python:3.14-slim
 RUN useradd --uid 1000 --create-home app
 WORKDIR /app
 COPY --from=build /app/.venv /app/.venv
+COPY --from=frontend /frontend/dist ./frontend/dist
 COPY offers.json ./
 COPY scripts ./scripts
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1

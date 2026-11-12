@@ -27,8 +27,9 @@ Python 3.14 · Gemini · Postgres + pgvector · FastAPI · Pydantic AI · LangGr
   `/offers/extract` (structured data from a pasted job ad), `/offers/{index}/tips` (streamed
   interview tips). Database connections come from a pool, so a busy or missing database
   gives a 503 within 5 s instead of a hanging request.
-- **Docker**: a multi-stage image built with uv (dependencies in their own cached layer, no dev
-  tools, non-root user) and a compose file that runs the API together with Postgres.
+- **Docker**: one multi-stage image that builds the React app with npm and the API with uv
+  (dependencies in their own cached layers, no dev tools, non-root user); FastAPI serves the
+  built frontend. A compose file runs it together with Postgres.
 - **Observability**: per-request IDs, step timings and token counts in the logs (text or JSON).
 
 ## Architecture
@@ -177,15 +178,15 @@ npm install
 npm run dev                               # http://localhost:5173
 ```
 
-Or run the API and the database in Docker (the indexing step is needed once, the data stays
-in a volume):
+Or run the whole app in Docker (the indexing step is needed once, the data stays in a volume):
 
 ```bash
 docker compose up --build -d
 docker compose run --rm api python scripts/index_offers.py
 ```
 
-Compose reads `.env` but points `DATABASE_URL` at the `db` service.
+The app is at http://127.0.0.1:8000 and the API docs at http://127.0.0.1:8000/docs. Compose
+reads `.env` but points `DATABASE_URL` at the `db` service.
 
 Use the tools from an MCP client:
 
