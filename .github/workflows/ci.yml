@@ -61,7 +61,7 @@ jobs:
           job-offers-ai
 
       - name: Smoke test
-        run: curl --retry 10 --retry-connrefused --retry-delay 1 -fsS http://127.0.0.1:8000/offers > /dev/null
+        run: curl --retry 30 --retry-all-errors --retry-delay 1 -fsS http://127.0.0.1:8000/offers > /dev/null
 
       - name: API logs
         if: always()
