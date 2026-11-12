@@ -1,16 +1,13 @@
-import json
 from typing import Any
 
 import pytest
 from google.genai import types
-from pydantic import SecretStr
 
 from offers import tools
-from offers.config import Settings
-from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer
 from offers.store import Connection, replace_offers
-from offers.tools import AgentDeps, list_offers, salary_stats, search_job_ads
+from offers.tools import list_offers, salary_stats, search_job_ads
+from tests.helpers import make_deps, relevance, vec
 
 OFFERS = [
     Offer(
@@ -26,10 +23,6 @@ OFFERS = [
     Offer(title="B", company="Y", city="Warsaw", salary_min=8000, salary_max=12000),
     Offer(title="C", company="Z", city="Gdansk", remote=True, salary_max=11000),
 ]
-
-
-def vec(*head: float) -> list[float]:
-    return list(head) + [0.0] * (EMBEDDING_DIMENSIONS - len(head))
 
 
 class FakeModels:
@@ -51,24 +44,8 @@ class FakeClient:
         self.models = FakeModels()
 
 
-def make_deps(client: Any = None, conn: Any = None) -> AgentDeps:
-    settings = Settings(
-        gemini_api_key=SecretStr("test-key"),
-        gemini_model="chat-model",
-        rag_min_score=0.5,
-        rag_rerank=True,
-        _env_file=None,
-    )
-    return AgentDeps(client=client, conn=conn, settings=settings, offers=OFFERS)
-
-
-def relevance(*scores: int) -> str:
-    items = [{"index": number, "score": score} for number, score in enumerate(scores, start=1)]
-    return json.dumps({"scores": items})
-
-
 def test_list_offers_filters_and_leaves_out_descriptions() -> None:
-    result = list_offers(make_deps(), city="warsaw", remote=True)
+    result = list_offers(make_deps(OFFERS), city="warsaw", remote=True)
 
     assert result.total == 1
     assert [row.title for row in result.offers] == ["A"]
@@ -79,20 +56,20 @@ def test_list_offers_filters_and_leaves_out_descriptions() -> None:
 def test_list_offers_cuts_long_lists_but_keeps_the_total(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(tools, "MAX_LISTED_OFFERS", 2)
 
-    result = list_offers(make_deps())
+    result = list_offers(make_deps(OFFERS))
 
     assert result.total == 3
     assert [row.title for row in result.offers] == ["A", "B"]
 
 
 def test_salary_stats_for_city() -> None:
-    stats = salary_stats(make_deps(), city="Warsaw")
+    stats = salary_stats(make_deps(OFFERS), city="Warsaw")
 
     assert (stats.offers_count, stats.average, stats.min, stats.max) == (2, 12500.0, 8000, 20000)
 
 
 def test_salary_stats_for_given_titles_reports_gaps() -> None:
-    stats = salary_stats(make_deps(), titles=["a", "C", "Ghost"])
+    stats = salary_stats(make_deps(OFFERS), titles=["a", "C", "Ghost"])
 
     assert stats.offers_count == 2
     assert (stats.average, stats.min, stats.max) == (15000.0, 10000, 20000)
@@ -101,7 +78,7 @@ def test_salary_stats_for_given_titles_reports_gaps() -> None:
 
 
 def test_salary_stats_combines_titles_with_filters() -> None:
-    stats = salary_stats(make_deps(), titles=["A", "B", "C"], remote=True)
+    stats = salary_stats(make_deps(OFFERS), titles=["A", "B", "C"], remote=True)
 
     assert stats.offers_count == 2
     assert stats.average == 15000.0
@@ -122,7 +99,7 @@ def test_search_job_ads_returns_offers_accepted_by_reranker(conn: Connection) ->
     client = FakeClient()
     client.models.relevance = relevance(9, 2)
 
-    hits = search_job_ads(make_deps(client, conn), "flexible hours")
+    hits = search_job_ads(make_deps(OFFERS, client, conn, rag_min_score=0.5), "flexible hours")
 
     assert [(hit.title, hit.company, hit.fragment, hit.relevance) for hit in hits] == [
         ("B", "Y", "b", 9)
@@ -136,7 +113,7 @@ def test_search_job_ads_returns_every_accepted_offer_best_first(conn: Connection
     client = FakeClient()
     client.models.relevance = relevance(6, 8)
 
-    hits = search_job_ads(make_deps(client, conn), "flexible hours")
+    hits = search_job_ads(make_deps(OFFERS, client, conn, rag_min_score=0.5), "flexible hours")
 
     assert [hit.title for hit in hits] == ["C", "B"]
 
@@ -146,6 +123,8 @@ def test_search_job_ads_passes_filters_to_search(conn: Connection) -> None:
     client = FakeClient()
     client.models.relevance = relevance(9)
 
-    hits = search_job_ads(make_deps(client, conn), "flexible hours", remote=True)
+    hits = search_job_ads(
+        make_deps(OFFERS, client, conn, rag_min_score=0.5), "flexible hours", remote=True
+    )
 
     assert [(hit.title, hit.remote) for hit in hits] == [("C", True)]

@@ -1,12 +1,8 @@
 import pytest
 
-from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer
 from offers.store import Connection, replace_offers, search_keywords, search_offers
-
-
-def vec(*head: float) -> list[float]:
-    return list(head) + [0.0] * (EMBEDDING_DIMENSIONS - len(head))
+from tests.helpers import vec
 
 
 @pytest.fixture

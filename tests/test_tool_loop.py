@@ -6,34 +6,7 @@ from google.genai import types
 
 from offers.observability import request_context
 from offers.tool_loop import run_tool_loop
-
-
-def calls_response(*calls: tuple[str, dict[str, Any]]) -> types.GenerateContentResponse:
-    parts = [
-        types.Part(function_call=types.FunctionCall(name=name, args=args)) for name, args in calls
-    ]
-    content = types.Content(role="model", parts=parts)
-    return types.GenerateContentResponse(candidates=[types.Candidate(content=content)])
-
-
-def text_response(text: str) -> types.GenerateContentResponse:
-    content = types.Content(role="model", parts=[types.Part(text=text)])
-    return types.GenerateContentResponse(candidates=[types.Candidate(content=content)])
-
-
-class ScriptedModels:
-    def __init__(self, responses: list[types.GenerateContentResponse]) -> None:
-        self.responses = responses
-        self.sent: list[list[types.Content]] = []
-
-    def generate_content(self, **kwargs: Any) -> types.GenerateContentResponse:
-        self.sent.append(list(kwargs["contents"]))
-        return self.responses.pop(0)
-
-
-class ScriptedClient:
-    def __init__(self, responses: list[types.GenerateContentResponse]) -> None:
-        self.models = ScriptedModels(responses)
+from tests.helpers import ScriptedClient, calls_response, text_response
 
 
 def echo(name: str, args: dict[str, Any]) -> dict[str, Any]:

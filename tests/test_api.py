@@ -13,10 +13,10 @@ from pydantic import SecretStr
 import offers.api
 from offers.api import app, get_client, get_conn, get_offers, get_settings
 from offers.config import Settings
-from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer
 from offers.observability import current_request
 from offers.store import Connection, replace_offers
+from tests.helpers import call_response, text_response, vec
 
 OFFERS = [
     Offer(title="A", company="X", city="Warsaw", salary_min=10000, salary_max=20000),
@@ -24,21 +24,6 @@ OFFERS = [
 ]
 
 CHUNKS = [["a"], ["b"]]
-
-
-def vec(*head: float) -> list[float]:
-    return list(head) + [0.0] * (EMBEDDING_DIMENSIONS - len(head))
-
-
-def text_response(text: str) -> types.GenerateContentResponse:
-    content = types.Content(role="model", parts=[types.Part(text=text)])
-    return types.GenerateContentResponse(candidates=[types.Candidate(content=content)])
-
-
-def call_response(name: str, **args: Any) -> types.GenerateContentResponse:
-    part = types.Part(function_call=types.FunctionCall(name=name, args=args))
-    content = types.Content(role="model", parts=[part])
-    return types.GenerateContentResponse(candidates=[types.Candidate(content=content)])
 
 
 class FakeModels:

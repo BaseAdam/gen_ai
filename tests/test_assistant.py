@@ -1,37 +1,10 @@
 from typing import Any
 
 import pytest
-from google.genai import types
 
 from offers.assistant import answer_question, run_tool
 from offers.models import Offer
-
-
-def text_response(text: str) -> types.GenerateContentResponse:
-    part = types.Part(text=text)
-    content = types.Content(role="model", parts=[part])
-    return types.GenerateContentResponse(candidates=[types.Candidate(content=content)])
-
-
-def call_response(name: str, **args: Any) -> types.GenerateContentResponse:
-    part = types.Part(function_call=types.FunctionCall(name=name, args=args))
-    content = types.Content(role="model", parts=[part])
-    return types.GenerateContentResponse(candidates=[types.Candidate(content=content)])
-
-
-class ScriptedModels:
-    def __init__(self, responses: list[types.GenerateContentResponse]) -> None:
-        self.responses = responses
-        self.sent: list[list[types.Content]] = []
-
-    def generate_content(self, **kwargs: Any) -> types.GenerateContentResponse:
-        self.sent.append(list(kwargs["contents"]))
-        return self.responses.pop(0)
-
-
-class ScriptedClient:
-    def __init__(self, responses: list[types.GenerateContentResponse]) -> None:
-        self.models = ScriptedModels(responses)
+from tests.helpers import ScriptedClient, call_response, text_response
 
 
 @pytest.fixture

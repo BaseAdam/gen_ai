@@ -7,6 +7,7 @@ from google import genai
 from pydantic import BaseModel, Field, TypeAdapter
 
 from offers.embeddings import embed_texts
+from offers.io import load_models, save_models
 from offers.models import RagAnswer, Verdict
 
 
@@ -19,9 +20,7 @@ class EvalCase(BaseModel):
 
 
 def load_cases(path: str) -> list[EvalCase]:
-    with open(path, encoding="utf-8") as f:
-        raw_cases = json.load(f)
-    return [EvalCase.model_validate(raw) for raw in raw_cases]
+    return load_models(path, EvalCase)
 
 
 def hits_at_k(retrieved: list[str], relevant: list[str], k: int) -> int:
@@ -110,15 +109,11 @@ class AnswerRecord(BaseModel):
 
 
 def save_answers(records: list[AnswerRecord], path: str) -> None:
-    raw_records = [record.model_dump(mode="json") for record in records]
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(raw_records, f, ensure_ascii=False, indent=2)
+    save_models(records, path)
 
 
 def load_answers(path: str) -> list[AnswerRecord]:
-    with open(path, encoding="utf-8") as f:
-        raw_records = json.load(f)
-    return [AnswerRecord.model_validate(raw) for raw in raw_records]
+    return load_models(path, AnswerRecord)
 
 
 CITATION_PATTERN = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
@@ -165,12 +160,8 @@ class VerdictRecord(BaseModel):
 
 
 def save_verdicts(records: list[VerdictRecord], path: str) -> None:
-    raw_records = [record.model_dump(mode="json") for record in records]
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(raw_records, f, ensure_ascii=False, indent=2)
+    save_models(records, path)
 
 
 def load_verdicts(path: str) -> list[VerdictRecord]:
-    with open(path, encoding="utf-8") as f:
-        raw_records = json.load(f)
-    return [VerdictRecord.model_validate(raw) for raw in raw_records]
+    return load_models(path, VerdictRecord)

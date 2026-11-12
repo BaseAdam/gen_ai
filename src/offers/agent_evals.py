@@ -1,8 +1,9 @@
-import json
 import math
 import re
 
 from pydantic import BaseModel
+
+from offers.io import load_models
 
 NUMBER_PATTERN = re.compile(r"\d{1,3}(?:[,  ]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?")
 NUMBER_TOLERANCE = 0.005
@@ -22,9 +23,7 @@ class AgentTask(BaseModel):
 
 
 def load_tasks(path: str) -> list[AgentTask]:
-    with open(path, encoding="utf-8") as f:
-        raw_tasks = json.load(f)
-    return [AgentTask.model_validate(raw) for raw in raw_tasks]
+    return load_models(path, AgentTask)
 
 
 def numbers_in(text: str) -> list[float]:

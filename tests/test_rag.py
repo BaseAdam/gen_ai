@@ -1,11 +1,9 @@
-import json
 import logging
 from typing import Any
 
 import pytest
 from google.genai import types
 
-from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer, ScoredOffer
 from offers.rag import (
     NO_RESULTS_ANSWER,
@@ -15,10 +13,7 @@ from offers.rag import (
     retrieve,
 )
 from offers.store import Connection, replace_offers
-
-
-def vec(*head: float) -> list[float]:
-    return list(head) + [0.0] * (EMBEDDING_DIMENSIONS - len(head))
+from tests.helpers import relevance, vec
 
 
 def save_offers(conn: Connection) -> None:
@@ -150,11 +145,6 @@ def test_answer_with_rag_applies_min_score(conn: Connection) -> None:
     result = answer_with_rag(client, conn, "Best pick?", "chat-model", "embed-model", min_score=0.8)
 
     assert [item.offer.title for item in result.sources] == ["B"]
-
-
-def relevance(*scores: int) -> str:
-    items = [{"index": number, "score": score} for number, score in enumerate(scores, start=1)]
-    return json.dumps({"scores": items})
 
 
 def test_answer_with_rag_reranks_candidates(conn: Connection) -> None:

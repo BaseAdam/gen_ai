@@ -6,7 +6,6 @@ from typing import Any
 import pytest
 from google import genai
 from google.genai import errors
-from pydantic import SecretStr
 from pydantic_ai import UnexpectedModelBehavior, UsageLimitExceeded
 from pydantic_ai.messages import (
     ModelMessage,
@@ -20,7 +19,6 @@ from pydantic_ai.usage import RequestUsage
 
 from offers import mcp_server, tools
 from offers.agent import AGENT_INSTRUCTION
-from offers.config import Settings
 from offers.models import Offer
 from offers.observability import record_tokens, request_context
 from offers.pyai_agent import (
@@ -31,6 +29,7 @@ from offers.pyai_agent import (
     build_model,
 )
 from offers.tools import AgentDeps, SearchHit
+from tests.helpers import hit, make_deps
 
 OFFERS = [
     Offer(title="A", company="X", city="Krakow", remote=True, salary_min=10000, salary_max=14000),
@@ -38,13 +37,6 @@ OFFERS = [
 ]
 
 type Respond = Callable[[list[ModelMessage], AgentInfo], ModelResponse]
-
-
-def make_deps(client: Any = None) -> AgentDeps:
-    settings = Settings(
-        gemini_api_key=SecretStr("test-key"), gemini_model="chat-model", _env_file=None
-    )
-    return AgentDeps(client=client, conn=None, settings=settings, offers=OFFERS)  # type: ignore[arg-type]
 
 
 def call(tool: str, **args: Any) -> ModelResponse:
@@ -72,19 +64,6 @@ def last_request_parts(messages: list[ModelMessage]) -> list[Any]:
     return list(request.parts)
 
 
-def hit(title: str, relevance: float) -> SearchHit:
-    return SearchHit(
-        title=title,
-        company="X",
-        city="Krakow",
-        remote=True,
-        salary_min=None,
-        salary_max=None,
-        fragment="...",
-        relevance=relevance,
-    )
-
-
 def test_tools_come_from_mcp_server_and_output_from_code() -> None:
     infos: list[AgentInfo] = []
 
@@ -92,7 +71,7 @@ def test_tools_come_from_mcp_server_and_output_from_code() -> None:
         infos.append(info)
         return final("Hi", [])
 
-    ask_agent(make_deps(), "Hello", model=FunctionModel(respond))
+    ask_agent(make_deps(OFFERS), "Hello", model=FunctionModel(respond))
 
     info = infos[0]
     assert info.instructions is not None and info.instructions.startswith(AGENT_INSTRUCTION)
@@ -124,7 +103,7 @@ def test_agent_combines_search_with_salary_stats(monkeypatch: pytest.MonkeyPatch
         final("A has flexible hours and pays 12,000 PLN on average.", ["A"]),
     )
 
-    output = ask_agent(make_deps(), "Average salary with flexible hours?", model=model)
+    output = ask_agent(make_deps(OFFERS), "Average salary with flexible hours?", model=model)
 
     assert output == AgentAnswer(
         answer="A has flexible hours and pays 12,000 PLN on average.", offers=["A"]
@@ -150,7 +129,7 @@ def test_search_outage_goes_back_to_model_for_one_more_try(
         final("Search is temporarily unavailable, please try again later.", []),
     )
 
-    output = ask_agent(make_deps(), "Where will a junior get a mentor?", model=model)
+    output = ask_agent(make_deps(OFFERS), "Where will a junior get a mentor?", model=model)
 
     assert output.offers == []
     [retry] = last_request_parts(seen[1])
@@ -171,7 +150,7 @@ def test_unexpected_tool_crash_reaches_model_without_details(
         final("Search failed, please try again later.", []),
     )
 
-    ask_agent(make_deps(), "Where will a junior get a mentor?", model=model)
+    ask_agent(make_deps(OFFERS), "Where will a junior get a mentor?", model=model)
 
     [retry] = last_request_parts(seen[1])
     assert isinstance(retry, ToolReturnPart)
@@ -189,7 +168,7 @@ def test_llm_calls_inside_tools_are_counted_in_the_run(monkeypatch: pytest.Monke
     model, _ = scripted(call("search_job_ads", query="mentoring"), final("A.", ["A"]))
 
     with request_context("task") as context:
-        ask_agent(make_deps(), "Mentoring?", model=model)
+        ask_agent(make_deps(OFFERS), "Mentoring?", model=model)
 
     assert context.llm_calls == 3
     assert len(context.steps) == 2
@@ -206,7 +185,7 @@ def test_second_search_outage_ends_the_run(monkeypatch: pytest.MonkeyPatch) -> N
     )
 
     with pytest.raises(UnexpectedModelBehavior, match="exceeded max retries"):
-        ask_agent(make_deps(), "Where will a junior get a mentor?", model=model)
+        ask_agent(make_deps(OFFERS), "Where will a junior get a mentor?", model=model)
 
 
 def test_invalid_tool_arguments_go_back_to_model() -> None:
@@ -215,7 +194,7 @@ def test_invalid_tool_arguments_go_back_to_model() -> None:
         final("Sorry.", []),
     )
 
-    ask_agent(make_deps(), "Anything in Krakow?", model=model)
+    ask_agent(make_deps(OFFERS), "Anything in Krakow?", model=model)
 
     [retry] = last_request_parts(seen[1])
     assert isinstance(retry, ToolReturnPart)
@@ -231,7 +210,7 @@ def test_request_limit_stops_a_looping_model() -> None:
         return call("list_offers", city="Krakow")
 
     with request_context("task") as context, pytest.raises(UsageLimitExceeded):
-        ask_agent(make_deps(), "Loop forever", model=FunctionModel(respond))
+        ask_agent(make_deps(OFFERS), "Loop forever", model=FunctionModel(respond))
 
     assert len(calls) == MAX_MODEL_REQUESTS
     assert context.llm_calls == MAX_MODEL_REQUESTS
@@ -244,7 +223,7 @@ def test_ask_agent_logs_tool_calls_and_counts_usage(caplog: pytest.LogCaptureFix
     second = ModelResponse(parts=final("A pays 12,000 PLN.", ["A"]).parts, usage=usage)
     model, _ = scripted(first, second)
     with request_context("task") as context, caplog.at_level(logging.INFO, logger="offers"):
-        ask_agent(make_deps(), "How much does A pay?", model=model)
+        ask_agent(make_deps(OFFERS), "How much does A pay?", model=model)
 
     assert 'pyai calls salary_stats({"titles": ["A"]})' in caplog.messages
     assert "pyai.run tokens: input=2000 output=40 thinking=60" in caplog.messages
@@ -257,7 +236,7 @@ def test_ask_agent_logs_tool_calls_and_counts_usage(caplog: pytest.LogCaptureFix
 def test_build_model_uses_shared_client_and_deterministic_settings() -> None:
     client = genai.Client(api_key="test-key")
 
-    model = build_model(make_deps(client))
+    model = build_model(make_deps(OFFERS, client))
 
     assert model.model_name == "chat-model"
     assert model.settings is not None

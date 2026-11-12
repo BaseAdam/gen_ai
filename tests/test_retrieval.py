@@ -1,13 +1,9 @@
 import pytest
 
-from offers.embeddings import EMBEDDING_DIMENSIONS
 from offers.models import Offer, ScoredOffer
 from offers.retrieval import hybrid_search, reciprocal_rank_fusion
 from offers.store import Connection, replace_offers
-
-
-def vec(*head: float) -> list[float]:
-    return list(head) + [0.0] * (EMBEDDING_DIMENSIONS - len(head))
+from tests.helpers import vec
 
 
 def item(offer_id: int, title: str, chunk: str = "") -> ScoredOffer:

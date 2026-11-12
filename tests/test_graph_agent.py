@@ -9,16 +9,16 @@ from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.runnables import Runnable
 from langgraph.errors import GraphRecursionError
-from pydantic import Field, SecretStr
+from pydantic import Field
 
 from offers import mcp_server, tools
-from offers.config import Settings
 from offers.graph_agent import ask_graph, build_model
 from offers.llm import build_http_options
 from offers.models import Offer
 from offers.observability import record_tokens, request_context
 from offers.pyai_agent import ANSWER_INSTRUCTION, ANSWER_TOOL, MAX_MODEL_REQUESTS, AgentAnswer
 from offers.tools import AgentDeps, SearchHit
+from tests.helpers import hit, make_deps
 
 OFFERS = [
     Offer(title="A", company="X", city="Krakow", remote=True, salary_min=10000, salary_max=14000),
@@ -52,11 +52,6 @@ class ScriptedChat(BaseChatModel):
         return self
 
 
-def make_deps() -> AgentDeps:
-    settings = Settings(gemini_api_key=SecretStr("test-key"), gemini_model="m", _env_file=None)
-    return AgentDeps(client=None, conn=None, settings=settings, offers=OFFERS)  # type: ignore[arg-type]
-
-
 def call(*calls: tuple[str, dict[str, Any]], usage: dict[str, Any] | None = None) -> AIMessage:
     tool_calls = [
         {"name": name, "args": args, "id": f"call-{number}"}
@@ -73,30 +68,17 @@ def tool_messages(messages: list[BaseMessage]) -> list[ToolMessage]:
     return [message for message in messages if isinstance(message, ToolMessage)]
 
 
-def hit(title: str, relevance: float) -> SearchHit:
-    return SearchHit(
-        title=title,
-        company="X",
-        city="Krakow",
-        remote=True,
-        salary_min=None,
-        salary_max=None,
-        fragment="...",
-        relevance=relevance,
-    )
-
-
 def test_model_gets_mcp_tools_answer_tool_and_our_http_options() -> None:
     model = ScriptedChat(responses=[final("Hi", [])])
 
-    ask_graph(make_deps(), "Hello", model=model)
+    ask_graph(make_deps(OFFERS), "Hello", model=model)
 
     names = [getattr(tool, "name", None) or tool["function"]["name"] for tool in model.bound_tools]
     assert names == ["list_offers", "search_job_ads", "salary_stats", ANSWER_TOOL]
     for tool in model.bound_tools[:3]:
         assert tool.description.strip() == inspect.getdoc(getattr(mcp_server, tool.name))
     assert model.tool_choice == "any"
-    assert model.call_kwargs[0]["http_options"] == build_http_options(make_deps().settings)
+    assert model.call_kwargs[0]["http_options"] == build_http_options(make_deps(OFFERS).settings)
     first_prompt = model.seen[0][0]
     assert first_prompt.content == ANSWER_INSTRUCTION
 
@@ -112,7 +94,7 @@ def test_graph_combines_search_with_salary_stats(monkeypatch: pytest.MonkeyPatch
     )
 
     with request_context("task") as context:
-        output = ask_graph(make_deps(), "Average salary with flexible hours?", model=model)
+        output = ask_graph(make_deps(OFFERS), "Average salary with flexible hours?", model=model)
 
     assert output == AgentAnswer(answer="A pays 12,000 PLN on average.", offers=["A"])
     [search_result] = tool_messages(model.seen[1])
@@ -131,7 +113,7 @@ def test_parallel_calls_are_one_step_and_all_results_go_back() -> None:
     )
 
     with request_context("task") as context:
-        ask_graph(make_deps(), "Krakow or Warsaw?", model=model)
+        ask_graph(make_deps(OFFERS), "Krakow or Warsaw?", model=model)
 
     averages = [json.loads(str(m.content))["average"] for m in tool_messages(model.seen[1])]
     assert averages == [12000.0, 7000.0]
@@ -150,7 +132,7 @@ def test_tool_errors_go_back_to_model_as_text(monkeypatch: pytest.MonkeyPatch) -
         ]
     )
 
-    output = ask_graph(make_deps(), "Mentoring?", model=model)
+    output = ask_graph(make_deps(OFFERS), "Mentoring?", model=model)
 
     outage, invalid = tool_messages(model.seen[1])
     assert "search_job_ads is temporarily unavailable" in str(outage.content)
@@ -163,7 +145,7 @@ def test_recursion_limit_stops_a_looping_model() -> None:
     model = ScriptedChat(responses=responses)
 
     with request_context("task") as context, pytest.raises(GraphRecursionError):
-        ask_graph(make_deps(), "Loop forever", model=model)
+        ask_graph(make_deps(OFFERS), "Loop forever", model=model)
 
     assert len(model.seen) == MAX_MODEL_REQUESTS
     assert len(context.steps) == MAX_MODEL_REQUESTS
@@ -191,7 +173,7 @@ def test_tokens_exclude_thinking_and_count_llm_calls_inside_tools(
     )
 
     with request_context("task") as context:
-        ask_graph(make_deps(), "Mentoring?", model=model)
+        ask_graph(make_deps(OFFERS), "Mentoring?", model=model)
 
     assert (context.input_tokens, context.output_tokens, context.thinking_tokens) == (2400, 70, 60)
     assert context.llm_calls == 3
@@ -200,13 +182,13 @@ def test_tokens_exclude_thinking_and_count_llm_calls_inside_tools(
 def test_plain_text_reply_becomes_answer_without_offers() -> None:
     model = ScriptedChat(responses=[AIMessage(content="I can only help with job offers.")])
 
-    output = ask_graph(make_deps(), "Weather?", model=model)
+    output = ask_graph(make_deps(OFFERS), "Weather?", model=model)
 
     assert output == AgentAnswer(answer="I can only help with job offers.", offers=[])
 
 
 def test_build_model_uses_settings_and_low_thinking() -> None:
-    deps = make_deps()
+    deps = make_deps(OFFERS)
     deps.settings = deps.settings.model_copy(update={"gemini_model": "gemini-3.5-flash-lite"})
 
     model = build_model(deps)

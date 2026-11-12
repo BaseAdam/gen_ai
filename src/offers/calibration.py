@@ -1,10 +1,10 @@
-import json
 import re
 from typing import Literal
 
 from pydantic import BaseModel
 
 from offers.evals import CITATION_PATTERN
+from offers.io import load_models
 from offers.models import RagAnswer, Verdict
 
 type BreakKind = Literal["wrong-citation", "invented-fact", "off-topic"]
@@ -49,9 +49,7 @@ class HumanLabel(BaseModel):
 
 
 def load_labels(path: str) -> list[HumanLabel]:
-    with open(path, encoding="utf-8") as f:
-        raw_labels = json.load(f)
-    return [HumanLabel.model_validate(raw) for raw in raw_labels]
+    return load_models(path, HumanLabel)
 
 
 CRITERIA = ("grounded", "citations_correct", "answers_question")
