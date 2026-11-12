@@ -16,6 +16,10 @@ from offers.tools import AgentDeps
 
 MAX_MODEL_REQUESTS = 8
 ANSWER_TOOL = "final_result"
+ANSWER_INSTRUCTION = (
+    AGENT_INSTRUCTION + " Put the exact titles of the offers that answer the question in "
+    "`offers`; do not include offers you mention only to exclude them."
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +33,7 @@ class AgentAnswer(BaseModel):
 
 offers_agent = Agent(
     output_type=ToolOutput(AgentAnswer, name=ANSWER_TOOL),
-    instructions=AGENT_INSTRUCTION
-    + " Put the exact titles of the offers that answer the question in `offers`; "
-    "do not include offers you mention only to exclude them.",
+    instructions=ANSWER_INSTRUCTION,
 )
 
 

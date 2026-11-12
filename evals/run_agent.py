@@ -5,11 +5,13 @@ from dataclasses import dataclass, field
 import httpx
 import pydantic_ai
 from google.genai import errors
+from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
 
 from offers.agent import answer_with_agent
 from offers.agent_evals import AgentTask, check_answer, check_trajectory, load_tasks
 from offers.assistant import answer_question
 from offers.config import Settings
+from offers.graph_agent import ask_graph
 from offers.io import load_offers
 from offers.llm import create_client
 from offers.observability import RequestContext, configure_logging, request_context
@@ -19,9 +21,14 @@ from offers.store import connect
 from offers.tools import AgentDeps
 
 TASKS_PATH = "evals/agent_tasks.json"
-ALL_SYSTEMS = ["assistant", "rag", "agent", "pyai"]
-TOOL_SYSTEMS = {"agent", "pyai"}
-INFRASTRUCTURE_ERRORS = (errors.APIError, httpx.TimeoutException, pydantic_ai.ModelAPIError)
+ALL_SYSTEMS = ["assistant", "rag", "agent", "pyai", "graph"]
+TOOL_SYSTEMS = {"agent", "pyai", "graph"}
+INFRASTRUCTURE_ERRORS = (
+    errors.APIError,
+    httpx.TimeoutException,
+    pydantic_ai.ModelAPIError,
+    ChatGoogleGenerativeAIError,
+)
 PAUSE_SECONDS = 15
 
 
@@ -42,6 +49,9 @@ def run_system(name: str, deps: AgentDeps, question: str) -> tuple[str, list[str
         return answer_with_agent(deps, question), None
     if name == "pyai":
         output = ask_agent(deps, question)
+        return output.answer, output.offers
+    if name == "graph":
+        output = ask_graph(deps, question)
         return output.answer, output.offers
     result = answer_with_rag(
         deps.client,
