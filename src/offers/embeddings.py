@@ -1,9 +1,7 @@
-import math
-
 from google import genai
 from google.genai import types
 
-from offers.models import Offer, ScoredOffer
+from offers.models import Offer
 
 EMBEDDING_DIMENSIONS = 768
 
@@ -12,13 +10,6 @@ def offer_to_text(offer: Offer) -> str:
     mode = "remote" if offer.remote else "on-site"
     skills = ", ".join(offer.skills) or "not specified"
     return f"{offer.title} at {offer.company}, {offer.city}, {mode}. Requirements: {skills}."
-
-
-def cosine_similarity(a: list[float], b: list[float]) -> float:
-    dot = sum(x * y for x, y in zip(a, b, strict=True))
-    norm_a = math.sqrt(sum(x * x for x in a))
-    norm_b = math.sqrt(sum(y * y for y in b))
-    return dot / (norm_a * norm_b)
 
 
 def embed_texts(
@@ -46,17 +37,3 @@ def embed_groups(
         result.append(vectors[position : position + len(group)])
         position += len(group)
     return result
-
-
-def rank_offers(
-    query_vector: list[float],
-    offer_vectors: list[list[float]],
-    offers: list[Offer],
-    top_k: int = 5,
-) -> list[ScoredOffer]:
-    scored = [
-        ScoredOffer(offer=offer, score=cosine_similarity(query_vector, vector))
-        for vector, offer in zip(offer_vectors, offers, strict=True)
-    ]
-    scored.sort(key=lambda item: item.score, reverse=True)
-    return scored[:top_k]

@@ -1,6 +1,7 @@
 [project]
 name = "offers"
 version = "0.1.0"
+description = "Job offer analyzer: RAG, evals and agents over a set of job ads, built with Gemini"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [

@@ -1,3 +1,8 @@
+"""Builds the search index: chunks offers.json, embeds the chunks and stores them in Postgres.
+
+Run from the project root: uv run python scripts/index_offers.py
+"""
+
 from offers.chunking import chunk_offer
 from offers.config import Settings
 from offers.embeddings import embed_groups

@@ -9,10 +9,10 @@ from typing import Annotated
 import httpx
 import psycopg
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse, StreamingResponse
 from google import genai
 from google.genai import errors
 from pydantic import BaseModel, Field
-from starlette.responses import JSONResponse, StreamingResponse
 
 from offers.analysis import filter_offers
 from offers.assistant import answer_question

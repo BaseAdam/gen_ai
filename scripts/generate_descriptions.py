@@ -1,3 +1,9 @@
+"""Writes the job ad texts in offers.json with Gemini; the offers themselves are synthetic.
+
+Only offers without a description are filled in, so the script can be resumed.
+Run from the project root: uv run python scripts/generate_descriptions.py
+"""
+
 import time
 
 from google.genai import types
